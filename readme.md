@@ -8,7 +8,7 @@ A Node.js + Express + SQLite web app that supports user accounts and a student d
 
 Run:
 
-git clone https://github.com/your-username/student-database-site.git
+git clone https://github.com/RoboSheepz/student-database-site.git
 
 cd student-database-site
 
