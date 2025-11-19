@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Users — admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial; max-width:900px; margin:2rem auto; padding:1rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th, td { border:1px solid #ddd; padding:.5rem; text-align:left; }
+    th { background:#f4f4f4; }
+    .controls { display:flex; gap:.5rem; align-items:center; }
+    input.invite { font-family: monospace; }
+  </style>
+</head>
+<body>
+  <a href="/">← Back</a>
+  <h1>Users (admin)</h1>
+
+  <div class="controls">
+    <button id="btn-refresh">Refresh</button>
+    <button id="btn-gen-invite">Generate Invite</button>
+    <span id="status"></span>
+  </div>
+
+  <div id="invite-output" style="margin-top:.5rem"></div>
+
+  <table id="users-table" style="display:none">
+    <thead>
+      <tr><th>ID</th><th>Email</th><th>Role</th><th>Created</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <p id="empty">No users found.</p>
+
+  <script src="/users.js"></script>
+</body>
+</html>

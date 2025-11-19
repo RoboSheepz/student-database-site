@@ -35,7 +35,7 @@ db.run(`
   )
 `);
 
-// Add user_profiles table (from cybermad schema, adapted for SQLite)
+// Add user_profiles table (adapted schema)
 db.run(`
   CREATE TABLE IF NOT EXISTS user_profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +50,19 @@ db.run(`
     country TEXT NOT NULL DEFAULT '',
     acct_type INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+  )
+`);
+
+// Add invites table for admin invite codes
+db.run(`
+  CREATE TABLE IF NOT EXISTS invites (
+    code TEXT PRIMARY KEY,
+    created_by INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    used INTEGER NOT NULL DEFAULT 0,
+    used_by INTEGER,
+    FOREIGN KEY(created_by) REFERENCES users(id),
+    FOREIGN KEY(used_by) REFERENCES users(id)
   )
 `);
 
@@ -79,9 +92,22 @@ async function getUserById(id) {
 
 // Register
 app.post('/api/register', async (req, res) => {
-  const { email, password, acct_type = 0 } = req.body || {};
-  const { student_id } = req.body || {};
+  // require invite_code when creating admin accounts
+  const { email, password, acct_type = 0, student_id, invite_code } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+
+  // If attempting to create an admin, validate invite code
+  if (Number(acct_type) === 1) {
+    if (!invite_code) return res.status(400).json({ error: 'invite_code required to create admin' });
+    try {
+      const inv = await db.getAsync('SELECT code, used FROM invites WHERE code = ?', [invite_code]);
+      if (!inv) return res.status(400).json({ error: 'Invalid invite code' });
+      if (inv.used) return res.status(409).json({ error: 'Invite code already used' });
+    } catch (err) {
+      console.error('Invite lookup failed', err);
+      return res.status(500).json({ error: 'Server error validating invite' });
+    }
+  }
 
   const normalizedEmail = String(email).trim().toLowerCase();
 
@@ -93,8 +119,19 @@ app.post('/api/register', async (req, res) => {
     await db.runAsync('INSERT INTO users (email, password, acct_type) VALUES (?, ?, ?)', [normalizedEmail, hashed, acct_type]);
 
     const user = await db.getAsync('SELECT id, email, created_at, acct_type FROM users WHERE email = ?', [normalizedEmail]);
-    // If a student_id was provided, try to link the new user to that student profile.
-    if (student_id) {
+
+    // If invite_code was used (admin), mark it used now that user exists
+    if (Number(acct_type) === 1 && invite_code) {
+      try {
+        await db.runAsync('UPDATE invites SET used = 1, used_by = ? WHERE code = ?', [user.id, invite_code]);
+      } catch (err) {
+        console.error('Failed to mark invite used', err);
+        // Not critical to block user creation — but inform client
+      }
+    }
+
+    // If a student_id was provided for non-admin registration, try to link the new user to that student profile.
+    if (student_id && Number(acct_type) === 0) {
       try {
         const pid = Number(student_id);
         const profile = await db.getAsync('SELECT id, user_id FROM user_profiles WHERE id = ?', [pid]);
@@ -108,15 +145,14 @@ app.post('/api/register', async (req, res) => {
           await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]);
           return res.status(409).json({ error: 'student profile already linked' });
         }
-
         await db.runAsync('UPDATE user_profiles SET user_id = ? WHERE id = ?', [user.id, pid]);
       } catch (errLink) {
         console.error('Link error', errLink);
-        // rollback user creation
         try { await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]); } catch(e){}
         return res.status(500).json({ error: 'Failed to link student profile' });
       }
     }
+
     const token = createToken({ id: user.id, email: user.email, acct_type: user.acct_type });
 
     res.cookie(TOKEN_NAME, token, {
@@ -291,6 +327,40 @@ app.post('/api/students', async (req, res) => {
     res.status(201).json({ student });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Admin: list users
+app.get('/api/users', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  try {
+    const users = await db.allAsync('SELECT id, email, created_at, acct_type FROM users ORDER BY id');
+    res.json({ users });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Admin: create invite code
+const crypto = require('crypto');
+app.post('/api/invites', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  try {
+    const code = crypto.randomBytes(8).toString('hex');
+    await db.runAsync('INSERT INTO invites (code, created_by) VALUES (?, ?)', [code, data.id]);
+    res.status(201).json({ code });
+  } catch (err) {
+    console.error('Invite creation failed', err);
     res.status(500).json({ error: 'Database error' });
   }
 });

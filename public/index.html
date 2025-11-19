@@ -14,8 +14,7 @@
 <body>
   <h1>Auth demo</h1>
 
-  <!-- Added link to students page -->
-  <p><a href="/students.html">View Students (cybermad)</a></p>
+  <!-- Links moved to logged-in area -->
 
   <div id="status"></div>
 
@@ -23,15 +22,20 @@
     <h2>Register</h2>
     <input id="reg-email" placeholder="Email" type="email" />
     <input id="reg-password" placeholder="Password" type="password" />
-    <!-- new: acct type selector -->
     <select id="reg-acct-type" aria-label="Account type">
       <option value="0" selected>Student</option>
       <option value="1">Admin</option>
     </select>
+
+    <!-- student id shown for students -->
     <input id="reg-student-id" placeholder="Student ID (optional)" />
+
+    <!-- invite code shown only when Admin is selected -->
+    <input id="reg-invite-code" placeholder="Invite code (required for Admin)" style="display:none" />
+
     <button id="btn-register">Register</button>
 
-    <hr />
+  <hr />
 
     <h2>Login</h2>
     <input id="login-email" placeholder="Email" type="email" />
@@ -41,6 +45,10 @@
 
   <section id="logged-in" style="display:none">
     <h2>Welcome</h2>
+    <div id="links" style="margin-bottom:.5rem;">
+      <span id="students-link" style="margin-right:1rem; display:none"><a href="/students.html">View Students</a></span>
+      <span id="admin-link" style="display:none"><a href="/users.html">View Users</a></span>
+    </div>
     <div id="profile"></div>
     <div class="row">
       <button id="btn-secret">Get Secret</button>
