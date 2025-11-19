@@ -14,12 +14,21 @@
 <body>
   <h1>Auth demo</h1>
 
+  <!-- Added link to students page -->
+  <p><a href="/students.html">View Students (cybermad)</a></p>
+
   <div id="status"></div>
 
   <section id="not-logged-in">
     <h2>Register</h2>
     <input id="reg-email" placeholder="Email" type="email" />
     <input id="reg-password" placeholder="Password" type="password" />
+    <!-- new: acct type selector -->
+    <select id="reg-acct-type" aria-label="Account type">
+      <option value="0" selected>Student</option>
+      <option value="1">Admin</option>
+    </select>
+    <input id="reg-student-id" placeholder="Student ID (optional)" />
     <button id="btn-register">Register</button>
 
     <hr />

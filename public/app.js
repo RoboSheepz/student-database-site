@@ -20,30 +20,33 @@ async function api(path, opts = {}) {
   return data;
 }
 
-async function refreshMe() {
-  try {
-    const res = await api('/api/me', { method: 'GET' });
-    logged.style.display = '';
-    notLogged.style.display = 'none';
-    profileDiv.textContent = `Email: ${res.user.email}\nCreated: ${res.user.created_at}`;
-  } catch (err) {
-    logged.style.display = 'none';
-    notLogged.style.display = '';
-    profileDiv.textContent = '';
-  }
-}
-
 $('#btn-register').addEventListener('click', async () => {
   const email = $('#reg-email').value;
   const password = $('#reg-password').value;
+  const acct_type = Number($('#reg-acct-type').value || 0);
+  const student_id = $('#reg-student-id') ? $('#reg-student-id').value : undefined;
   try {
-    const res = await api('/api/register', { method: 'POST', body: JSON.stringify({ email, password }) });
+    const res = await api('/api/register', { method: 'POST', body: JSON.stringify({ email, password, acct_type, student_id }) });
     showStatus('Registered & logged in!');
     await refreshMe();
   } catch (e) {
     showStatus(e.data?.error || 'Register failed', true);
   }
 });
+
+async function refreshMe() {
+  try {
+    const res = await api('/api/me', { method: 'GET' });
+    logged.style.display = '';
+    notLogged.style.display = 'none';
+    const role = res.user.acct_type === 1 ? 'admin' : 'student';
+    profileDiv.textContent = `Email: ${res.user.email}\nRole: ${role}\nCreated: ${res.user.created_at}`;
+  } catch (err) {
+    logged.style.display = 'none';
+    notLogged.style.display = '';
+    profileDiv.textContent = '';
+  }
+}
 
 $('#btn-login').addEventListener('click', async () => {
   const email = $('#login-email').value;
