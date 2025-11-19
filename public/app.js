@@ -7,6 +7,9 @@ const profileDiv = $('#profile');
 const secretOut = $('#secret-output');
 const adminLink = $('#admin-link');
 const studentsLink = $('#students-link');
+const pwInput = $('#reg-password');
+const pwLabel = $('#pw-label');
+const pwTime = $('#pw-time');
 
 function showStatus(msg, isError=false) {
   status.textContent = msg;
@@ -47,6 +50,95 @@ $('#btn-register').addEventListener('click', async () => {
     showStatus(e.data?.error || 'Register failed', true);
   }
 });
+
+// Password strength estimator (simple entropy estimate)
+function estimateEntropy(pw) {
+  if (!pw) return 0;
+  let pool = 0;
+  if (/[a-z]/.test(pw)) pool += 26;
+  if (/[A-Z]/.test(pw)) pool += 26;
+  if (/[0-9]/.test(pw)) pool += 10;
+  if (/[^A-Za-z0-9]/.test(pw)) pool += 33; // symbols
+
+  // rough adjustment for common patterns: repeated characters reduce entropy
+  const uniqueChars = new Set(pw).size;
+  const length = pw.length;
+
+  // base entropy: length * log2(pool)
+  const bitsPerChar = pool > 0 ? Math.log2(pool) : 0;
+  let entropy = bitsPerChar * length;
+
+  // penalize for low uniqueness
+  if (uniqueChars / length < 0.5) {
+    entropy *= 0.8;
+  }
+
+  // small boost for longer passwords
+  if (length >= 12) entropy *= 1.05;
+  if (length >= 20) entropy *= 1.1;
+
+  return Math.max(0, Math.round(entropy));
+}
+
+function timeToCrackSeconds(entropy) {
+  // guesses approx = 2^entropy
+  // assume 10 billion guesses per second for offline attack (1e10)
+  const guesses = Math.pow(2, entropy);
+  const seconds = guesses / 1e10;
+  return seconds;
+}
+
+function formatTime(sec) {
+  if (!isFinite(sec) || sec > 3.154e16) return 'centuries'; // >1e9 years
+  if (sec < 1) return `${Math.round(sec * 1000)} ms`;
+  if (sec < 60) return `${Math.round(sec)} s`;
+  const mins = sec / 60;
+  if (mins < 60) return `${Math.round(mins)} m`;
+  const hours = mins / 60;
+  if (hours < 24) return `${Math.round(hours)} h`;
+  const days = hours / 24;
+  if (days < 365) return `${Math.round(days)} d`;
+  const years = days / 365;
+  if (years < 1000) return `${Math.round(years)} y`;
+  return 'centuries';
+}
+
+function strengthLabel(entropy) {
+  if (entropy < 28) return { label: 'Very Weak', color: 'crimson' };
+  if (entropy < 36) return { label: 'Weak', color: 'orangered' };
+  if (entropy < 60) return { label: 'Reasonable', color: 'orange' };
+  if (entropy < 128) return { label: 'Strong', color: 'green' };
+  return { label: 'Very Strong', color: 'darkgreen' };
+}
+
+function updatePasswordUI() {
+  const pw = pwInput ? pwInput.value : '';
+  const entropy = estimateEntropy(pw);
+  const tt = timeToCrackSeconds(entropy);
+  const label = strengthLabel(entropy);
+  if (pwLabel) {
+    if (pw) {
+      pwLabel.textContent = `Strength: ${label.label}`;
+      pwLabel.style.color = label.color;
+      pwLabel.style.display = '';
+    } else {
+      pwLabel.textContent = '';
+      pwLabel.style.display = 'none';
+    }
+  }
+  if (pwTime) {
+    if (pw) {
+      pwTime.textContent = `Time to crack: ${formatTime(tt)}`;
+      pwTime.style.display = '';
+    } else {
+      pwTime.textContent = '';
+      pwTime.style.display = 'none';
+    }
+  }
+}
+
+if (pwInput) pwInput.addEventListener('input', updatePasswordUI);
+updatePasswordUI();
 
 // Toggle visibility of student id vs invite code based on acct type
 const acctSelect = $('#reg-acct-type');

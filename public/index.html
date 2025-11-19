@@ -2,17 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Auth demo</title>
+  <title>Student Database Demo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: system-ui, Arial; max-width: 640px; margin: 2rem auto; padding: 1rem; }
-    input { display:block; margin: .4rem 0 1rem; padding: .5rem; width: 100%; }
+    body { font-family: system-ui, Arial; max-width: 640px; margin: 2rem auto; padding: 1.5rem; }
+    input { display:block; margin: .4rem 0 1rem; padding: .6rem; width: 100%; }
     button { padding: .6rem 1rem; }
     .row { display:flex; gap: .5rem; }
   </style>
 </head>
 <body>
-  <h1>Auth demo</h1>
+  <h1>Student Database Demo</h1>
 
   <!-- Links moved to logged-in area -->
 
@@ -22,6 +22,10 @@
     <h2>Register</h2>
     <input id="reg-email" placeholder="Email" type="email" />
     <input id="reg-password" placeholder="Password" type="password" />
+    <div id="pw-strength" style="margin-bottom:.4rem">
+      <span id="pw-label" style="font-weight:600; display:none"></span>
+      <span id="pw-time" style="margin-left:.5rem;color:#666; display:none"></span>
+    </div>
     <select id="reg-acct-type" aria-label="Account type">
       <option value="0" selected>Student</option>
       <option value="1">Admin</option>
