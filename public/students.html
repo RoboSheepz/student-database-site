@@ -22,8 +22,12 @@
   </div>
 
   <section style="margin-top:1rem">
-    <h2>Add student</h2>
-    <form id="student-form">
+    <h2 style="display:flex;align-items:center;gap:.5rem">
+      Student
+      <button id="toggle-add-btn" type="button" style="margin-left:auto">Show</button>
+    </h2>
+    <div id="add-container">
+  <form id="student-form" class="add-form" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
         <input name="first_name" id="first_name" placeholder="First name" required />
         <input name="last_name" id="last_name" placeholder="Last name" required />
@@ -39,6 +43,7 @@
         <button type="submit" id="btn-add">Add student</button>
       </div>
     </form>
+    </div>
   </section>
 
   <div id="list">
@@ -53,6 +58,108 @@
 
     <p id="empty">No students found.</p>
   </div>
+
+  <section id="courses-section" style="margin-top:2rem">
+    <h2 style="display:flex;align-items:center;gap:.5rem">Courses
+      <button id="toggle-courses-btn" type="button" style="margin-left:auto">Show</button>
+    </h2>
+    <div id="courses-content">
+      <div class="add-form" id="courses-form" style="display:none">
+        <h3>Add course</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <input id="course-title" placeholder="Title" />
+          <input id="course-units" placeholder="Units" type="number" />
+          <input id="course-start" placeholder="Start date (epoch)" />
+          <input id="course-end" placeholder="End date (epoch)" />
+          <input id="course-instructor" placeholder="Instructor ID" />
+          <input id="course-meeting-days" placeholder="Meeting days" />
+          <input id="course-add-code" placeholder="Add code" />
+        </div>
+        <div style="margin-top:.5rem"><button id="btn-add-course" type="button">Add Course</button></div>
+      </div>
+    <table id="courses-table" style="display:none">
+      <thead>
+        <tr><th>ID</th><th>Title</th><th>Units</th><th>Start</th><th>End</th><th>Instructor ID</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="courses-empty">No courses found.</p>
+    </div>
+  </section>
+
+  <section id="enroll-section" style="margin-top:2rem">
+    <h2 style="display:flex;align-items:center;gap:.5rem">Enrollments
+      <button id="toggle-enroll-btn" type="button" style="margin-left:auto">Show</button>
+    </h2>
+    <div id="enroll-content">
+      <div class="add-form" id="enroll-form" style="display:none">
+        <h3>Add enrollment</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <input id="enroll-course-id" placeholder="Course ID" type="number" />
+          <input id="enroll-student-id" placeholder="Student ID" type="number" />
+          <input id="enroll-status" placeholder="Status" type="number" />
+        </div>
+        <div style="margin-top:.5rem"><button id="btn-add-enroll" type="button">Add Enrollment</button></div>
+      </div>
+    <table id="enroll-table" style="display:none">
+      <thead>
+        <tr><th>Course ID</th><th>Student ID</th><th>Status</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="enroll-empty">No enrollments found.</p>
+    </div>
+  </section>
+
+  <section id="grades-section" style="margin-top:2rem">
+    <h2 style="display:flex;align-items:center;gap:.5rem">Final Grades
+      <button id="toggle-grades-btn" type="button" style="margin-left:auto">Show</button>
+    </h2>
+    <div id="grades-content">
+      <div class="add-form" id="grades-form" style="display:none">
+        <h3>Add final grade</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <input id="grade-course-id" placeholder="Course ID" type="number" />
+          <input id="grade-student-id" placeholder="Student ID" type="number" />
+          <input id="grade-term" placeholder="Term" type="number" />
+          <input id="grade-grade" placeholder="Grade" />
+        </div>
+        <div style="margin-top:.5rem"><button id="btn-add-grade" type="button">Add Grade</button></div>
+      </div>
+    <table id="grades-table" style="display:none">
+      <thead>
+        <tr><th>Course ID</th><th>Student ID</th><th>Term</th><th>Grade</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="grades-empty">No grades found.</p>
+    </div>
+  </section>
+
+  <section id="books-section" style="margin-top:2rem">
+    <h2 style="display:flex;align-items:center;gap:.5rem">Textbooks
+      <button id="toggle-books-btn" type="button" style="margin-left:auto">Show</button>
+    </h2>
+    <div id="books-content">
+      <div class="add-form" id="books-form" style="display:none">
+        <h3>Add textbook</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <input id="book-title" placeholder="Title" />
+          <input id="book-price" placeholder="Price" type="number" step="0.01" />
+          <input id="book-qty" placeholder="Quantity" type="number" />
+          <input id="book-course-id" placeholder="Course ID" type="number" />
+        </div>
+        <div style="margin-top:.5rem"><button id="btn-add-book" type="button">Add Book</button></div>
+      </div>
+    <table id="books-table" style="display:none">
+      <thead>
+        <tr><th>ID</th><th>Title</th><th>Price</th><th>Qty</th><th>Course ID</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p id="books-empty">No textbooks found.</p>
+    </div>
+  </section>
 
   <script src="/students.js"></script>
 </body>

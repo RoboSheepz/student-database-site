@@ -88,6 +88,11 @@ async function getUserById(id) {
   return await db.getAsync('SELECT id, email, created_at, acct_type FROM users WHERE id = ?', [id]);
 }
 
+async function tableExists(name) {
+  const row = await db.getAsync("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", [name]);
+  return !!row;
+}
+
 // --- Routes ---
 
 // Register
@@ -325,6 +330,164 @@ app.post('/api/students', async (req, res) => {
     );
 
     res.status(201).json({ student });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// GET: Courses
+app.get('/api/courses', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    if (!await tableExists('courses')) return res.json({ courses: [] });
+    const courses = await db.allAsync('SELECT * FROM courses ORDER BY id');
+    res.json({ courses });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// GET: Textbooks
+app.get('/api/textbooks', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    if (!await tableExists('textbooks')) return res.json({ textbooks: [] });
+    const books = await db.allAsync('SELECT * FROM textbooks ORDER BY id');
+    res.json({ textbooks: books });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// GET: Courses enrolled (admin sees all; student sees their enrollments)
+app.get('/api/courses_enrolled', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    if (!await tableExists('courses_enrolled')) return res.json({ courses_enrolled: [] });
+
+    if (data.acct_type === 1) {
+      const rows = await db.allAsync('SELECT * FROM courses_enrolled ORDER BY course_id');
+      return res.json({ courses_enrolled: rows });
+    }
+
+    // student: find their profile id
+    const profile = await db.getAsync('SELECT id FROM user_profiles WHERE user_id = ?', [data.id]);
+    if (!profile) return res.json({ courses_enrolled: [] });
+    const rows = await db.allAsync('SELECT * FROM courses_enrolled WHERE student_id = ? ORDER BY course_id', [profile.id]);
+    res.json({ courses_enrolled: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// GET: Final grades (admin sees all; student sees their grades)
+app.get('/api/final_grades', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+
+  try {
+    if (!await tableExists('final_grades')) return res.json({ final_grades: [] });
+
+    if (data.acct_type === 1) {
+      const rows = await db.allAsync('SELECT * FROM final_grades ORDER BY course_id');
+      return res.json({ final_grades: rows });
+    }
+
+    const profile = await db.getAsync('SELECT id FROM user_profiles WHERE user_id = ?', [data.id]);
+    if (!profile) return res.json({ final_grades: [] });
+    const rows = await db.allAsync('SELECT * FROM final_grades WHERE student_id = ? ORDER BY term', [profile.id]);
+    res.json({ final_grades: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// POST: create course (admin only)
+app.post('/api/courses', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  if (!await tableExists('courses')) return res.status(400).json({ error: 'courses table not present' });
+  const b = req.body || {};
+  try {
+    await db.runAsync(`INSERT INTO courses (id, title, description, units, start_date, end_date, meeting_days, meeting_time_start, meeting_time_end, last_day_to_add, last_day_to_drop, instructor_id, prereq_coreq, textbooks_required, add_code, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [b.id || null, b.title || '', b.description || '', b.units || 0, b.start_date || 0, b.end_date || 0, b.meeting_days || '', b.meeting_time_start || 0, b.meeting_time_end || 0, b.last_day_to_add || 0, b.last_day_to_drop || 0, b.instructor_id || 0, b.prereq_coreq || '', b.textbooks_required || '', b.add_code || 0, b.published || 0]);
+    const created = await db.getAsync('SELECT last_insert_rowid() as id');
+    const row = await db.getAsync('SELECT * FROM courses WHERE id = ?', [created.id]);
+    res.status(201).json({ course: row });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// POST: create textbook (admin only)
+app.post('/api/textbooks', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  if (!await tableExists('textbooks')) return res.status(400).json({ error: 'textbooks table not present' });
+  const b = req.body || {};
+  try {
+    await db.runAsync('INSERT INTO textbooks (id, title, description, price, quantity, course_id) VALUES (?, ?, ?, ?, ?, ?)', [b.id || null, b.title || '', b.description || '', b.price || 0, b.quantity || 0, b.course_id || null]);
+    const created = await db.getAsync('SELECT last_insert_rowid() as id');
+    const row = await db.getAsync('SELECT * FROM textbooks WHERE id = ?', [created.id]);
+    res.status(201).json({ textbook: row });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// POST: create enrollment
+app.post('/api/courses_enrolled', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  if (!await tableExists('courses_enrolled')) return res.status(400).json({ error: 'courses_enrolled table not present' });
+  const b = req.body || {};
+  try {
+    await db.runAsync('INSERT INTO courses_enrolled (course_id, student_id, status) VALUES (?, ?, ?)', [b.course_id, b.student_id, b.status || 0]);
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// POST: create final grade
+app.post('/api/final_grades', async (req, res) => {
+  const token = req.cookies[TOKEN_NAME];
+  const data = token && verifyToken(token);
+  if (!data) return res.status(401).json({ error: 'Not authenticated' });
+  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
+
+  if (!await tableExists('final_grades')) return res.status(400).json({ error: 'final_grades table not present' });
+  const b = req.body || {};
+  try {
+    await db.runAsync('INSERT INTO final_grades (course_id, student_id, term, grade) VALUES (?, ?, ?, ?)', [b.course_id, b.student_id, b.term, b.grade || '']);
+    res.status(201).json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
