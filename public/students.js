@@ -61,14 +61,18 @@ function renderStudents(list) {
   table.style.display = '';
   for (const s of list) {
     const tr = document.createElement('tr');
-
-    // If admin, show a link input/button for user assignment in the User ID column
+    // User ID cell: if admin and profile has no linked user, show input+link button;
+    // otherwise show the linked user id (or empty for non-admins)
     let userCell = '';
     if (isAdmin) {
-      userCell = `<td>
-        <input class="link-user-id" data-profile-id="${s.id}" placeholder="User ID" style="width:4.5rem" />
-        <button class="btn-link" data-profile-id="${s.id}">Link</button>
-      </td>`;
+      if (s.user_id == null || s.user_id === '') {
+        userCell = `<td>
+          <input class="link-user-id" data-profile-id="${s.id}" placeholder="User ID" style="width:4.5rem" />
+          <button class="btn-link" data-profile-id="${s.id}">Link</button>
+        </td>`;
+      } else {
+        userCell = `<td>${s.user_id}</td>`;
+      }
     } else {
       userCell = `<td>${s.user_id ?? ''}</td>`;
     }
