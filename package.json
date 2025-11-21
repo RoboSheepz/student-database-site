@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "watch:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --watch",
+    "build:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --minify"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -14,6 +16,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "tailwindcss": "^3.4.18"
   }
 }

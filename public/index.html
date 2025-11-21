@@ -1,45 +1,68 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>Auth demo</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, Arial; max-width: 640px; margin: 2rem auto; padding: 1rem; }
-    input { display:block; margin: .4rem 0 1rem; padding: .5rem; width: 100%; }
-    button { padding: .6rem 1rem; }
-    .row { display:flex; gap: .5rem; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#6366f1',
+            'brand-strong': '#4f46e5',
+            'brand-medium': '#a5b4fc',
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <h1>Auth demo</h1>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen flex items-center justify-center p-6">
 
-  <div id="status"></div>
+  <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full">
 
-  <section id="not-logged-in">
-    <h2>Register</h2>
-    <input id="reg-email" placeholder="Email" type="email" />
-    <input id="reg-password" placeholder="Password" type="password" />
-    <button id="btn-register">Register</button>
+    <h1 class="text-5xl font-extrabold text-center mb-10 text-brand">Auth demo</h1>
+    <div id="status" class="text-center font-bold text-lg mb-8"></div>
 
-    <hr />
+    <!-- NOT LOGGED IN -->
+    <div id="not-logged-in">
+      <h2 class="text-3xl font-bold text-center mb-8">Register</h2>
+      <input id="reg-email" placeholder="Email" type="email"
+             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
+      <input id="reg-password" placeholder="Password" type="password"
+             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-8 text-lg">
+      <button id="btn-register"
+              class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
+        Register
+      </button>
 
-    <h2>Login</h2>
-    <input id="login-email" placeholder="Email" type="email" />
-    <input id="login-password" placeholder="Password" type="password" />
-    <button id="btn-login">Login</button>
-  </section>
-
-  <section id="logged-in" style="display:none">
-    <h2>Welcome</h2>
-    <div id="profile"></div>
-    <div class="row">
-      <button id="btn-secret">Get Secret</button>
-      <button id="btn-logout">Logout</button>
+      <h2 class="text-3xl font-bold text-center mb-8 mt-12">Login</h2>
+      <input id="login-email" placeholder="Email" type="email"
+             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
+      <input id="login-password" placeholder="Password" type="password"
+             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-8 text-lg">
+      <button id="btn-login"
+              class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
+        Login
+      </button>
     </div>
-    <pre id="secret-output"></pre>
-  </section>
 
-  <script src="app.js"></script>
+    <!-- LOGGED IN -->
+    <div id="logged-in" class="hidden">
+      <h2 class="text-4xl font-bold text-center mb-10 text-brand">Welcome back!</h2>
+      <pre id="profile" class="bg-gray-100 p-6 rounded-xl mb-8 text-left font-mono text-sm"></pre>
+      <div class="flex gap-6 justify-center">
+        <button id="btn-logout" class="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-full font-bold text-xl">Logout</button>
+      </div>
+      
+  </div>
+
+  <!-- App JS -->
+  <script src="./app.js"></script>
+
 </body>
 </html>

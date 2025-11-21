@@ -23,12 +23,12 @@ async function api(path, opts = {}) {
 async function refreshMe() {
   try {
     const res = await api('/api/me', { method: 'GET' });
-    logged.style.display = '';
-    notLogged.style.display = 'none';
+    logged.classList.remove('hidden')
+    notLogged.classList.add('hidden')
     profileDiv.textContent = `Email: ${res.user.email}\nCreated: ${res.user.created_at}`;
   } catch (err) {
-    logged.style.display = 'none';
-    notLogged.style.display = '';
+    logged.classList.add('hidden')
+    notLogged.classList.remove('hidden')
     profileDiv.textContent = '';
   }
 }
