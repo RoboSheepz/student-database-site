@@ -1,7 +1,7 @@
--- Database: `cybermad`
+-- Database: `studentdb`
 
-CREATE DATABASE IF NOT EXISTS `cybermad` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE `cybermad`;
+CREATE DATABASE IF NOT EXISTS `studentdb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE `studentdb`;
 
 -- Table structure for table `courses`
 
@@ -54,12 +54,16 @@ CREATE TABLE `textbooks` (
 
 -- Table structure for table `user_profiles`
 
+-- NOTE: `user_profiles` now includes a `user_id` column to link to the user account
+-- (one user account may own at most one student profile). Adjust constraints per DB.
+
 CREATE TABLE `user_profiles` (
   `id` int(8) NOT NULL,
+  `user_id` int(8) DEFAULT NULL,
   `first_name` varchar(100) NOT NULL DEFAULT '',
   `last_name` varchar(100) NOT NULL DEFAULT '',
   `email` varchar(100) NOT NULL DEFAULT '',
-  `phone` int(9) NOT NULL,
+  `phone` varchar(32) DEFAULT NULL,
   `street_addr` varchar(100) NOT NULL DEFAULT '',
   `city` varchar(100) NOT NULL DEFAULT '',
   `state` varchar(100) NOT NULL DEFAULT '',
