@@ -1,39 +1,33 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Users — admin</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, Arial; max-width:900px; margin:2rem auto; padding:1rem; }
-    table { width:100%; border-collapse:collapse; margin-top:1rem; }
-    th, td { border:1px solid #ddd; padding:.5rem; text-align:left; }
-    th { background:#f4f4f4; }
-    .controls { display:flex; gap:.5rem; align-items:center; }
-    input.invite { font-family: monospace; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Users — Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Same Tailwind + Brand Colors as index.html & students.html -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#6366f1',
+            'brand-strong': '#4f46e5',
+            'brand-medium': '#a5b4fc',
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <a href="/">← Back</a>
-  <h1>Users (admin)</h1>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen flex items-center justify-center p-6">
 
-  <div class="controls">
-    <button id="btn-refresh">Refresh</button>
-    <button id="btn-gen-invite">Generate Invite</button>
-    <span id="status"></span>
-  </div>
+  <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-4xl w-full">
 
-  <div id="invite-output" style="margin-top:.5rem"></div>
-
-  <table id="users-table" style="display:none">
-    <thead>
-      <tr><th>ID</th><th>Email</th><th>Role</th><th>Created</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <p id="empty">No users found.</p>
-
-  <script src="/users.js"></script>
-</body>
-</html>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-10">
+      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl flex items-center gap-2 transition">
+        ← Back to Dashboard
+      </a>
+      <h1 class="text-5xl font-extrabold text-brand text
