@@ -30,39 +30,77 @@
 
     <!-- NOT LOGGED IN -->
     <div id="not-logged-in">
-      <h2 class="text-3xl font-bold text-center mb-8">Register</h2>
-      <input id="reg-email" placeholder="Email" type="email"
-             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
-      <input id="reg-password" placeholder="Password" type="password"
-             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-8 text-lg">
-      <button id="btn-register"
-              class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
-        Register
-      </button>
+      <!-- Register -->
+      <div class="mb-12">
+        <h2 class="text-3xl font-bold text-center mb-6">Register</h2>
+        <input id="reg-email" placeholder="Email" type="email"
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
+        <input id="reg-password" placeholder="Password" type="password"
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
 
-      <h2 class="text-3xl font-bold text-center mb-8 mt-12">Login</h2>
-      <input id="login-email" placeholder="Email" type="email"
-             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
-      <input id="login-password" placeholder="Password" type="password"
-             class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-8 text-lg">
-      <button id="btn-login"
-              class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
-        Login
-      </button>
+        <!-- Password strength UI -->
+        <div id="pw-label" class="text-center font-medium mt-2 mb-1 hidden"></div>
+        <div id="pw-time" class="text-center text-sm text-gray-600 hidden"></div>
+
+        <!-- Account type selector -->
+        <select id="reg-acct-type" class="w-full px-6 py-4 rounded-full border-2 border-brand mb-4 text-lg">
+          <option value="0">Student</option>
+          <option value="1">Admin</option>
+        </select>
+
+        <!-- Student ID (visible for students) -->
+        <input id="reg-student-id" placeholder="Student ID (optional)" 
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
+
+        <!-- Invite code (visible for admins) -->
+        <input id="reg-invite-code" placeholder="Invite Code (admin only)" 
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-6 text-lg hidden">
+
+        <button id="btn-register"
+                class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
+          Register
+        </button>
+      </div>
+
+      <!-- Login -->
+      <div class="border-t-2 border-gray-200 pt-10">
+        <h2 class="text-3xl font-bold text-center mb-6">Login</h2>
+        <input id="login-email" placeholder="Email" type="email"
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-4 text-lg">
+        <input id="login-password" placeholder="Password" type="password"
+               class="w-full px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium mb-8 text-lg">
+        <button id="btn-login"
+                class="w-full bg-brand hover:bg-brand-strong text-white font-bold py-5 rounded-full text-xl transition transform hover:scale-105">
+          Login
+        </button>
+      </div>
     </div>
 
     <!-- LOGGED IN -->
-    <div id="logged-in" class="hidden">
-      <h2 class="text-4xl font-bold text-center mb-10 text-brand">Welcome back!</h2>
+    <div id="logged-in" class="hidden text-center">
+      <h2 class="text-4xl font-bold mb-8 text-brand">Welcome back!</h2>
       <pre id="profile" class="bg-gray-100 p-6 rounded-xl mb-8 text-left font-mono text-sm"></pre>
-      <div class="flex gap-6 justify-center">
-        <button id="btn-logout" class="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-full font-bold text-xl">Logout</button>
+
+      <!-- Links (will be shown/hidden by JS) -->
+      <div class="space-x-4 mb-6">
+        <a id="students-link" href="/students.html" class="hidden inline-block bg-brand hover:bg-brand-strong text-white px-8 py-4 rounded-full font-bold text-xl">Students</a>
+        <a id="admin-link" href="/admin.html" class="hidden inline-block bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-full font-bold text-xl">Admin Panel</a>
       </div>
-      
+
+      <div class="space-x-6">
+        <button id="btn-secret" class="bg-brand hover:bg-brand-strong text-white px-10 py-5 rounded-full font-bold text-xl">
+          Get Secret
+        </button>
+        <button id="btn-logout" class="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-full font-bold text-xl">
+          Logout
+        </button>
+      </div>
+
+      <pre id="secret-output" class="mt-8 bg-gray-900 text-green-400 p-6 rounded-xl text-left font-mono text-sm max-h-64 overflow-auto"></pre>
+    </div>
   </div>
 
-  <!-- App JS -->
+  <!-- Your app.js (with DOMContentLoaded fix) -->
   <script src="./app.js"></script>
-
 </body>
 </html>
