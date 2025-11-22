@@ -1,6 +1,5 @@
-// public/students.js
 document.addEventListener('DOMContentLoaded', () => {
-  // === ELEMENTS ===
+  
   const $ = sel => document.querySelector(sel);
   const statusEl        = $('#status');
   const table           = $('#students-table');
@@ -10,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form            = $('#student-form');
   const btnAdd          = $('#btn-add');
 
-  // Other sections
+  
   const coursesTbody    = $('#courses-table')?.querySelector('tbody');
   const coursesEmpty    = $('#courses-empty');
   const enrollTbody     = $('#enroll-table')?.querySelector('tbody');
@@ -23,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAdmin = false;
   let currentUserId = null;
 
-  // === UTILS ===
+  
   function showStatus(msg, isError = false) {
     statusEl.textContent = msg;
     statusEl.style.color = isError ? 'crimson' : 'green';
@@ -164,14 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // === OTHER SECTIONS (Courses, Enrollments, Grades, Books) ===
+  
   async function fetchAndRender(url, tbodyEl, emptyEl, fields) {
     try {
       const data = await api(url);
       const list = Array.isArray(data) ? data : Object.values(data)[0] || [];
       renderTable(list, tbodyEl, emptyEl, fields);
-    }czek (err) {
-      if (emptyEl) emptyEl.textContent = err.error || 'Failed to load';
+    } catch(err){
+           if (emptyEl) emptyEl.textContent = err.error || 'Failed to load';
     }
   }
 
