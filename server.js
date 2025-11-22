@@ -529,10 +529,9 @@ app.post('/api/invites', async (req, res) => {
 });
 
 // Fallback: serve frontend
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
