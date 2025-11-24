@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Users — Admin Panel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -24,9 +23,44 @@
 
   <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-4xl w-full">
 
-    <!-- Header -->
+
     <div class="flex items-center justify-between mb-10">
-      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl flex items-center gap-2 transition">
-        ← Back to Dashboard
+      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl flex items-center gap-2 transition-colors">
+        Back to Dashboard
       </a>
-      <h1 class="text-5xl font-extrabold text-brand text
+      <h1 class="text-5xl font-extrabold text-brand">Users: Admin Panel</h1>
+      <div></div>
+    </div>
+
+    <div id="status" class="mb-4 text-lg font-semibold"></div>
+
+   
+    <table id="users-table" class="w-full text-left border-collapse border border-gray-300 mb-6">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Email</th>
+          <th class="p-2 border">Role</th>
+          <th class="p-2 border">Created</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="text-gray-500 mb-4">No users found.</div>
+
+
+    <div class="flex gap-4 mb-4">
+      <button id="btn-refresh" class="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-strong">Refresh Users</button>
+      <button id="btn-gen-invite" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Generate Invite</button>
+    </div>
+
+    <pre id="invite-output" class="bg-gray-100 p-2 rounded-lg"></pre>
+    
+
+  </div>
+  
+
+
+  <script src="users.js"></script>
+</body>
+</html>

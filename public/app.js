@@ -1,23 +1,35 @@
-// public/app.js
 const $ = sel => document.querySelector(sel);
 
 document.addEventListener('DOMContentLoaded', () => {
-
-  const status         = $('#status');
-  const notLogged      = $('#not-logged-in');
-  const logged         = $('#logged-in');
-  const profileDiv     = $('#profile');
-  const secretOut      = $('#secret-output');
-  const adminLink      = $('#admin-link');
-  const studentsLink   = $('#students-link');
-  const pwInput        = $('#reg-password');
-  const pwLabel        = $('#pw-label');
-  const pwTime         = $('#pw-time');
-  const acctSelect     = $('#reg-acct-type');
+  // Cache DOM elements with null safety
+  const status = $('#status');
+  const notLogged = $('#not-logged-in');
+  const logged = $('#logged-in');
+  const profileDiv = $('#profile');
+  const secretOut = $('#secret-output');
+  const adminLink = $('#admin-link');
+  const studentsLink = $('#students-link');
+  const pwInput = $('#reg-password');
+  const pwLabel = $('#pw-label');
+  const pwTime = $('#pw-time');
+  const acctSelect = $('#reg-acct-type');
   const studentIdInput = $('#reg-student-id');
-  const inviteInput    = $('#reg-invite-code');
+  const inviteInput = $('#reg-invite-code');
+  const btnRegister = $('#btn-register');
+  const btnLogin = $('#btn-login');
+  const btnLogout = $('#btn-logout');
+  const btnSecret = $('#btn-secret');
+
+  // Common weak passwords to check against
+  const COMMON_PASSWORDS = new Set([
+    'password', '123456', '12345678', 'qwerty', 'abc123', 'monkey', 'letmein',
+    'dragon', '111111', 'baseball', 'iloveyou', 'trustno1', 'sunshine', 'master',
+    'welcome', 'shadow', 'ashley', 'football', 'jesus', 'michael', 'ninja',
+    'mustang', 'password1', 'password123', 'admin', 'admin123', 'root', 'toor'
+  ]);
 
   function showStatus(msg, isError = false) {
+    if (!status) return;
     status.textContent = msg;
     status.style.color = isError ? 'crimson' : 'green';
     setTimeout(() => { status.textContent = ''; }, 4000);
@@ -29,47 +41,88 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
       ...opts
     });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw { status: res.status, data };
+    
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: res.statusText || 'Unknown error' };
+    }
+    
+    if (!res.ok) {
+      throw { status: res.status, data };
+    }
     return data;
   }
 
   // ====================== REGISTER ======================
-  $('#btn-register').addEventListener('click', async () => {
-    const email       = $('#reg-email').value.trim();
-    const password    = $('#reg-password').value;
-    const acct_type   = Number($('#reg-acct-type').value || 0);
-    const student_id  = $('#reg-student-id')?.value || undefined;
-    const invite_code = $('#reg-invite-code')?.value || undefined;
+  if (btnRegister) {
+    btnRegister.addEventListener('click', async () => {
+      const email = $('#reg-email')?.value?.trim() || '';
+      const password = $('#reg-password')?.value || '';
+      const acct_type = Number($('#reg-acct-type')?.value || 0);
+      const student_id = $('#reg-student-id')?.value?.trim() || '';
+      const invite_code = $('#reg-invite-code')?.value?.trim() || '';
 
-    if (!email || !password) {
-      showStatus('Please fill email and password', true);
-      return;
-    }
-    if (acct_type === 1 && !invite_code) {
-      showStatus('Invite code required for admin registration', true);
-      return;
-    }
+      // Validation
+      if (!email || !password) {
+        showStatus('Please fill email and password', true);
+        return;
+      }
 
-    try {
-      const payload = { email, password, acct_type };
-      if (acct_type === 0 && student_id) payload.student_id = student_id;
-      if (acct_type === 1 && invite_code) payload.invite_code = invite_code;
+      if (!isValidEmail(email)) {
+        showStatus('Please enter a valid email address', true);
+        return;
+      }
 
-      await api('/api/register', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-      showStatus('Registered & logged in!');
-      await refreshMe();
-    } catch (e) {
-      showStatus(e.data?.error || 'Register failed', true);
-    }
-  });
+      if (acct_type === 1 && !invite_code) {
+        showStatus('Invite code required for admin registration', true);
+        return;
+      }
+
+      // Check password strength before submitting
+      const entropy = estimateEntropy(password);
+      if (entropy < 28) {
+        showStatus('Password is too weak. Please choose a stronger password.', true);
+        return;
+      }
+
+      try {
+        const payload = { email, password, acct_type };
+        if (acct_type === 0 && student_id) {
+          payload.student_id = student_id;
+        }
+        if (acct_type === 1 && invite_code) {
+          payload.invite_code = invite_code;
+        }
+
+        await api('/api/register', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        showStatus('Registered & logged in!');
+        await refreshMe();
+      } catch (e) {
+        showStatus(e.data?.error || 'Register failed', true);
+      }
+    });
+  }
+
+  // ====================== EMAIL VALIDATION ======================
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
 
   // ====================== PASSWORD STRENGTH ======================
   function estimateEntropy(pw) {
     if (!pw) return 0;
+
+    // Check against common passwords first
+    if (COMMON_PASSWORDS.has(pw.toLowerCase())) {
+      return 10; // Very low entropy for common passwords
+    }
+
     let pool = 0;
     if (/[a-z]/.test(pw)) pool += 26;
     if (/[A-Z]/.test(pw)) pool += 26;
@@ -81,11 +134,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const bitsPerChar = pool > 0 ? Math.log2(pool) : 0;
     let entropy = bitsPerChar * length;
 
+    // Penalize low uniqueness ratio
     if (uniqueChars / length < 0.5) entropy *= 0.8;
+
+    // Penalize sequential or repeated patterns
+    if (hasSequentialChars(pw)) entropy *= 0.7;
+    if (hasRepeatedPatterns(pw)) entropy *= 0.75;
+
+    // Reward longer passwords
     if (length >= 12) entropy *= 1.05;
     if (length >= 20) entropy *= 1.1;
 
     return Math.max(0, Math.round(entropy));
+  }
+
+  function hasSequentialChars(pw) {
+    const sequences = ['0123456789', 'abcdefghijklmnopqrstuvwxyz', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+    const lower = pw.toLowerCase();
+    for (const seq of sequences) {
+      for (let i = 0; i <= seq.length - 3; i++) {
+        if (lower.includes(seq.substring(i, i + 3))) return true;
+        // Check reverse too
+        const rev = seq.substring(i, i + 3).split('').reverse().join('');
+        if (lower.includes(rev)) return true;
+      }
+    }
+    return false;
+  }
+
+  function hasRepeatedPatterns(pw) {
+    // Check for repeated characters (e.g., "aaa")
+    if (/(.)\1{2,}/.test(pw)) return true;
+    // Check for repeated patterns (e.g., "abab")
+    if (/(.+)\1+/.test(pw)) return true;
+    return false;
   }
 
   function timeToCrackSeconds(entropy) {
@@ -109,18 +191,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function strengthLabel(entropy) {
-    if (entropy < 28)  return { label: 'Very Weak',   color: 'crimson' };
-    if (entropy < 36)  return { label: 'Weak',       color: 'orangered' };
-    if (entropy < 60)  return { label: 'Reasonable', color: 'orange' };
-    if (entropy < 128) return { label: 'Strong',     color: 'green' };
-    return                     { label: 'Very Strong',color: 'darkgreen' };
+    if (entropy < 28) return { label: 'Very Weak', color: 'crimson' };
+    if (entropy < 36) return { label: 'Weak', color: 'orangered' };
+    if (entropy < 60) return { label: 'Reasonable', color: 'orange' };
+    if (entropy < 128) return { label: 'Strong', color: 'green' };
+    return { label: 'Very Strong', color: 'darkgreen' };
   }
 
   function updatePasswordUI() {
     const pw = pwInput?.value || '';
     const entropy = estimateEntropy(pw);
     const tt = timeToCrackSeconds(entropy);
-    const result = strengthLabel(entropy);   // ← fixed: now we actually get the object
+    const result = strengthLabel(entropy);
 
     if (pwLabel) {
       pwLabel.textContent = pw ? `Strength: ${result.label}` : '';
@@ -133,8 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (pwInput) pwInput.addEventListener('input', updatePasswordUI);
-  updatePasswordUI();
+  if (pwInput) {
+    pwInput.addEventListener('input', updatePasswordUI);
+    updatePasswordUI();
+  }
 
   // ====================== ACCOUNT TYPE TOGGLE ======================
   function updateRegisterFields() {
@@ -147,71 +231,91 @@ document.addEventListener('DOMContentLoaded', () => {
       inviteInput?.classList.add('hidden');
     }
   }
+
   if (acctSelect) {
     acctSelect.addEventListener('change', updateRegisterFields);
     updateRegisterFields();
   }
 
   // ====================== LOGIN ======================
-  $('#btn-login').addEventListener('click', async () => {
-    const email = $('#login-email').value.trim();
-    const password = $('#login-password').value;
+  if (btnLogin) {
+    btnLogin.addEventListener('click', async () => {
+      const email = $('#login-email')?.value?.trim() || '';
+      const password = $('#login-password')?.value || '';
 
-    if (!email || !password) {
-      showStatus('Please fill all fields', true);
-      return;
-    }
+      if (!email || !password) {
+        showStatus('Please fill all fields', true);
+        return;
+      }
 
-    try {
-      await api('/api/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      showStatus('Logged in');
-      await refreshMe();
-    } catch (e) {
-      showStatus(e.data?.error || 'Login failed', true);
-    }
-  });
+      if (!isValidEmail(email)) {
+        showStatus('Please enter a valid email address', true);
+        return;
+      }
+
+      console.log('Login attempt:', { email, passwordLength: password.length });
+
+      try {
+        await api('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+        showStatus('Logged in');
+        await refreshMe();
+      } catch (e) {
+        showStatus(e.data?.error || 'Login failed', true);
+      }
+    });
+  }
 
   // ====================== LOGOUT ======================
-  $('#btn-logout').addEventListener('click', async () => {
-    try {
-      await api('/api/logout', { method: 'POST' });
-      showStatus('Logged out');
-      await refreshMe();
-    } catch {
-      showStatus('Logout failed', true);
-    }
-  });
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      try {
+        await api('/api/logout', { method: 'POST' });
+        showStatus('Logged out');
+        await refreshMe();
+      } catch {
+        showStatus('Logout failed', true);
+      }
+    });
+  }
 
   // ====================== SECRET ======================
-  $('#btn-secret').addEventListener('click', async () => {
-    try {
-      const r = await api('/api/secret');
-      secretOut.textContent = JSON.stringify(r, null, 2);
-    } catch (e) {
-      secretOut.textContent = e.data?.error || 'Failed to fetch secret';
-    }
-  });
+  if (btnSecret) {
+    btnSecret.addEventListener('click', async () => {
+      if (!secretOut) return;
+      try {
+        const r = await api('/api/secret');
+        secretOut.textContent = JSON.stringify(r, null, 2);
+      } catch (e) {
+        secretOut.textContent = e.data?.error || 'Failed to fetch secret';
+      }
+    });
+  }
 
   // ====================== REFRESH ME ======================
   async function refreshMe() {
     try {
       const res = await api('/api/me');
-      logged.classList.remove('hidden');
-      notLogged.classList.add('hidden');
+      logged?.classList.remove('hidden');
+      notLogged?.classList.add('hidden');
+      
       const role = res.user.acct_type === 1 ? 'admin' : 'student';
-      profileDiv.textContent = `Email: ${res.user.email}\nRole: ${role}\nCreated: ${res.user.created_at}`;
-
-      if (studentsLink) studentsLink.classList.remove('hidden');
-      if (res.user.acct_type === 1 && adminLink) adminLink.classList.remove('hidden');
+      if (profileDiv) {
+        profileDiv.textContent = `Email: ${res.user.email}\nRole: ${role}\nCreated: ${res.user.created_at}`;
+      }
+      
+      studentsLink?.classList.remove('hidden');
+      if (res.user.acct_type === 1) {
+        adminLink?.classList.remove('hidden');
+      }
     } catch {
-      logged.classList.add('hidden');
-      notLogged.classList.remove('hidden');
-      profileDiv.textContent = '';
-      if (adminLink) adminLink.classList.add('hidden');
-      if (studentsLink) studentsLink.classList.add('hidden');
+      logged?.classList.add('hidden');
+      notLogged?.classList.remove('hidden');
+      if (profileDiv) profileDiv.textContent = '';
+      adminLink?.classList.add('hidden');
+      studentsLink?.classList.add('hidden');
     }
   }
 

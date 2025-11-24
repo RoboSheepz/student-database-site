@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -15,57 +14,69 @@ const TOKEN_NAME = 'token';
 
 // --- Database setup ---
 const db = new sqlite3.Database(path.join(__dirname, 'db.sqlite'));
-
-// Enable foreign key support in SQLite
 db.run('PRAGMA foreign_keys = ON');
 
-// Promisify DB methods for async/await
 db.runAsync = promisify(db.run).bind(db);
 db.getAsync = promisify(db.get).bind(db);
 db.allAsync = promisify(db.all).bind(db);
 
-// Create users table if not exists (added acct_type)
-db.run(`
-  CREATE TABLE IF NOT EXISTS users (
+// Create tables if not exist
+db.run(`CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  acct_type INTEGER NOT NULL DEFAULT 0
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS user_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER UNIQUE,
+  first_name TEXT NOT NULL DEFAULT '',
+  last_name TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL DEFAULT '',
+  phone TEXT,
+  street_addr TEXT NOT NULL DEFAULT '',
+  city TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL DEFAULT '',
+  country TEXT NOT NULL DEFAULT '',
+  acct_type INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+)`);
+
+db.run(`CREATE TABLE IF NOT EXISTS invites (
+  code TEXT PRIMARY KEY,
+  created_by INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  used INTEGER NOT NULL DEFAULT 0,
+  used_by INTEGER,
+  FOREIGN KEY(created_by) REFERENCES users(id),
+  FOREIGN KEY(used_by) REFERENCES users(id)
+)`);
+
+// Create courses table
+db.serialize(() => {
+  db.run(`DROP TABLE IF EXISTS courses`, (err) => {
+    if (err) console.error('Error dropping courses table:', err);
+  });
+  
+  db.run(`CREATE TABLE courses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    acct_type INTEGER NOT NULL DEFAULT 0
-  )
-`);
+    title TEXT NOT NULL,
+    units INTEGER NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    instructor_id INTEGER,
+    meeting_days TEXT,
+    add_code TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`, (err) => {
+    if (err) console.error('Error creating courses table:', err);
+    else console.log('Courses table ready');
+  });
+});
 
-// Add user_profiles table (adapted schema)
-db.run(`
-  CREATE TABLE IF NOT EXISTS user_profiles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER UNIQUE,
-    first_name TEXT NOT NULL DEFAULT '',
-    last_name TEXT NOT NULL DEFAULT '',
-    email TEXT NOT NULL DEFAULT '',
-    phone TEXT,
-    street_addr TEXT NOT NULL DEFAULT '',
-    city TEXT NOT NULL DEFAULT '',
-    state TEXT NOT NULL DEFAULT '',
-    country TEXT NOT NULL DEFAULT '',
-    acct_type INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
-  )
-`);
-
-// Add invites table for admin invite codes
-db.run(`
-  CREATE TABLE IF NOT EXISTS invites (
-    code TEXT PRIMARY KEY,
-    created_by INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    used INTEGER NOT NULL DEFAULT 0,
-    used_by INTEGER,
-    FOREIGN KEY(created_by) REFERENCES users(id),
-    FOREIGN KEY(used_by) REFERENCES users(id)
-  )
-`);
-
+// --- Middleware ---
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -84,37 +95,44 @@ function verifyToken(token) {
 }
 
 async function getUserById(id) {
-  // return acct_type so frontend can tell admin vs student
   return await db.getAsync('SELECT id, email, created_at, acct_type FROM users WHERE id = ?', [id]);
 }
 
-async function tableExists(name) {
-  const row = await db.getAsync("SELECT name FROM sqlite_master WHERE type='table' AND name = ?", [name]);
-  return !!row;
+// Auth middleware
+function requireAuth(req, res, next) {
+  const token = req.cookies[TOKEN_NAME];
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Not authenticated' });
+  req.user = decoded;
+  next();
 }
 
 // --- Routes ---
 
 // Register
 app.post('/api/register', async (req, res) => {
-  // require invite_code when creating admin accounts
   const { email, password, acct_type = 0, student_id, invite_code } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'email and password required' });
 
-  // If attempting to create an admin, validate invite code
+  const normalizedEmail = String(email).trim().toLowerCase();
+
   if (Number(acct_type) === 1) {
     if (!invite_code) return res.status(400).json({ error: 'invite_code required to create admin' });
+
     try {
-      const inv = await db.getAsync('SELECT code, used FROM invites WHERE code = ?', [invite_code]);
-      if (!inv) return res.status(400).json({ error: 'Invalid invite code' });
-      if (inv.used) return res.status(409).json({ error: 'Invite code already used' });
+      const normalizedCode = String(invite_code).trim().toUpperCase();
+      const inv = await db.getAsync(
+        `SELECT code, used FROM invites WHERE UPPER(TRIM(code)) = ? AND used = 0`,
+        [normalizedCode]
+      );
+      if (!inv) {
+        return res.status(400).json({ error: 'Invalid or already used invite code' });
+      }
     } catch (err) {
       console.error('Invite lookup failed', err);
       return res.status(500).json({ error: 'Server error validating invite' });
     }
   }
-
-  const normalizedEmail = String(email).trim().toLowerCase();
 
   try {
     const exists = await db.getAsync('SELECT id FROM users WHERE email = ?', [normalizedEmail]);
@@ -122,52 +140,34 @@ app.post('/api/register', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 12);
     await db.runAsync('INSERT INTO users (email, password, acct_type) VALUES (?, ?, ?)', [normalizedEmail, hashed, acct_type]);
-
     const user = await db.getAsync('SELECT id, email, created_at, acct_type FROM users WHERE email = ?', [normalizedEmail]);
 
-    // If invite_code was used (admin), mark it used now that user exists
     if (Number(acct_type) === 1 && invite_code) {
-      try {
-        await db.runAsync('UPDATE invites SET used = 1, used_by = ? WHERE code = ?', [user.id, invite_code]);
-      } catch (err) {
-        console.error('Failed to mark invite used', err);
-        // Not critical to block user creation — but inform client
-      }
+      const normalizedCode = String(invite_code).trim().toUpperCase();
+      await db.runAsync(
+        'UPDATE invites SET used = 1, used_by = ? WHERE UPPER(TRIM(code)) = ?',
+        [user.id, normalizedCode]
+      );
     }
 
-    // If a student_id was provided for non-admin registration, try to link the new user to that student profile.
     if (student_id && Number(acct_type) === 0) {
-      try {
-        const pid = Number(student_id);
-        const profile = await db.getAsync('SELECT id, user_id FROM user_profiles WHERE id = ?', [pid]);
-        if (!profile) {
-          // rollback user creation
-          await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]);
-          return res.status(400).json({ error: 'student profile not found' });
-        }
-        if (profile.user_id) {
-          // rollback user creation
-          await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]);
-          return res.status(409).json({ error: 'student profile already linked' });
-        }
-        await db.runAsync('UPDATE user_profiles SET user_id = ? WHERE id = ?', [user.id, pid]);
-      } catch (errLink) {
-        console.error('Link error', errLink);
-        try { await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]); } catch(e){}
-        return res.status(500).json({ error: 'Failed to link student profile' });
+      const pid = Number(student_id);
+      const profile = await db.getAsync('SELECT id, user_id FROM user_profiles WHERE id = ?', [pid]);
+      if (!profile) {
+        await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]);
+        return res.status(400).json({ error: 'student profile not found' });
       }
+      if (profile.user_id) {
+        await db.runAsync('DELETE FROM users WHERE id = ?', [user.id]);
+        return res.status(409).json({ error: 'student profile already linked' });
+      }
+      await db.runAsync('UPDATE user_profiles SET user_id = ? WHERE id = ?', [user.id, pid]);
     }
 
     const token = createToken({ id: user.id, email: user.email, acct_type: user.acct_type });
-
-    res.cookie(TOKEN_NAME, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
+    res.cookie(TOKEN_NAME, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ user });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
@@ -189,13 +189,7 @@ app.post('/api/login', async (req, res) => {
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
     const token = createToken({ id: row.id, email: row.email, acct_type: row.acct_type });
-
-    res.cookie(TOKEN_NAME, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie(TOKEN_NAME, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 });
 
     const user = await getUserById(row.id);
     res.json({ user });
@@ -207,302 +201,38 @@ app.post('/api/login', async (req, res) => {
 
 // Logout
 app.post('/api/logout', (req, res) => {
-  res.clearCookie(TOKEN_NAME, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
-  });
-  res.json({ ok: true });
+  res.clearCookie(TOKEN_NAME);
+  res.json({ success: true });
 });
 
 // Get current user
-app.get('/api/me', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
-
-  const data = verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Invalid token' });
-
+app.get('/api/me', requireAuth, async (req, res) => {
   try {
-    const user = await getUserById(data.id);
+    const user = await getUserById(req.user.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
-// Secret route
-app.get('/api/secret', (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
-  res.json({ secret: `Hello ${data.email}, here's a secret.` });
+// Secret endpoint
+app.get('/api/secret', requireAuth, (req, res) => {
+  res.json({ 
+    message: 'This is secret data!',
+    user: req.user,
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Students list (reads from user_profiles)
-// GET: Students list (admin sees all; student sees only their own profile)
-app.get('/api/students', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
+// Get all users (admin only)
+app.get('/api/users', requireAuth, async (req, res) => {
   try {
-    let students;
-    if (data.acct_type === 1) {
-      // admin: all profiles
-      students = await db.allAsync(
-        `SELECT id, user_id, first_name, last_name, email, phone, street_addr, city, state, country, acct_type FROM user_profiles ORDER BY last_name, first_name`
-      );
-    } else {
-      // student: only their linked profile (if any)
-      students = await db.allAsync(
-        `SELECT id, user_id, first_name, last_name, email, phone, street_addr, city, state, country, acct_type FROM user_profiles WHERE user_id = ?`,
-        [data.id]
-      );
+    if (req.user.acct_type !== 1) {
+      return res.status(403).json({ error: 'Admin access required' });
     }
-    res.json({ students });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: Link a profile to a user (admin only)
-app.post('/api/students/link', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  const { profile_id, user_id } = req.body || {};
-  if (!profile_id || !user_id) return res.status(400).json({ error: 'profile_id and user_id required' });
-
-  try {
-    await db.runAsync('UPDATE user_profiles SET user_id = ? WHERE id = ?', [user_id, profile_id]);
-    const updated = await db.getAsync('SELECT id, user_id, first_name, last_name, email FROM user_profiles WHERE id = ?', [profile_id]);
-    res.json({ profile: updated });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: Create student (admin only)
-app.post('/api/students', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  const {
-    user_id = null,
-    first_name = '',
-    last_name = '',
-    email = '',
-    phone = null,
-    street_addr = '',
-    city = '',
-    state = '',
-    country = '',
-    acct_type = 0
-  } = req.body || {};
-
-  if (!first_name || !last_name || !email) {
-    return res.status(400).json({ error: 'first_name, last_name and email required' });
-  }
-
-  try {
-    await db.runAsync(
-      `INSERT INTO user_profiles
-        (user_id, first_name, last_name, email, phone, street_addr, city, state, country, acct_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-
-      [user_id, first_name, last_name, email, phone, street_addr, city, state, country, acct_type]
-    );
-
-    const last = await db.getAsync('SELECT last_insert_rowid() as id');
-    const student = await db.getAsync(
-      `SELECT id, user_id, first_name, last_name, email, phone, street_addr, city, state, country, acct_type
-       FROM user_profiles WHERE id = ?`,
-      [last.id]
-    );
-
-    res.status(201).json({ student });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// GET: Courses
-app.get('/api/courses', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    if (!await tableExists('courses')) return res.json({ courses: [] });
-    const courses = await db.allAsync('SELECT * FROM courses ORDER BY id');
-    res.json({ courses });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// GET: Textbooks
-app.get('/api/textbooks', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    if (!await tableExists('textbooks')) return res.json({ textbooks: [] });
-    const books = await db.allAsync('SELECT * FROM textbooks ORDER BY id');
-    res.json({ textbooks: books });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// GET: Courses enrolled (admin sees all; student sees their enrollments)
-app.get('/api/courses_enrolled', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    if (!await tableExists('courses_enrolled')) return res.json({ courses_enrolled: [] });
-
-    if (data.acct_type === 1) {
-      const rows = await db.allAsync('SELECT * FROM courses_enrolled ORDER BY course_id');
-      return res.json({ courses_enrolled: rows });
-    }
-
-    // student: find their profile id
-    const profile = await db.getAsync('SELECT id FROM user_profiles WHERE user_id = ?', [data.id]);
-    if (!profile) return res.json({ courses_enrolled: [] });
-    const rows = await db.allAsync('SELECT * FROM courses_enrolled WHERE student_id = ? ORDER BY course_id', [profile.id]);
-    res.json({ courses_enrolled: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// GET: Final grades (admin sees all; student sees their grades)
-app.get('/api/final_grades', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-
-  try {
-    if (!await tableExists('final_grades')) return res.json({ final_grades: [] });
-
-    if (data.acct_type === 1) {
-      const rows = await db.allAsync('SELECT * FROM final_grades ORDER BY course_id');
-      return res.json({ final_grades: rows });
-    }
-
-    const profile = await db.getAsync('SELECT id FROM user_profiles WHERE user_id = ?', [data.id]);
-    if (!profile) return res.json({ final_grades: [] });
-    const rows = await db.allAsync('SELECT * FROM final_grades WHERE student_id = ? ORDER BY term', [profile.id]);
-    res.json({ final_grades: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: create course (admin only)
-app.post('/api/courses', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  if (!await tableExists('courses')) return res.status(400).json({ error: 'courses table not present' });
-  const b = req.body || {};
-  try {
-    await db.runAsync(`INSERT INTO courses (id, title, description, units, start_date, end_date, meeting_days, meeting_time_start, meeting_time_end, last_day_to_add, last_day_to_drop, instructor_id, prereq_coreq, textbooks_required, add_code, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [b.id || null, b.title || '', b.description || '', b.units || 0, b.start_date || 0, b.end_date || 0, b.meeting_days || '', b.meeting_time_start || 0, b.meeting_time_end || 0, b.last_day_to_add || 0, b.last_day_to_drop || 0, b.instructor_id || 0, b.prereq_coreq || '', b.textbooks_required || '', b.add_code || 0, b.published || 0]);
-    const created = await db.getAsync('SELECT last_insert_rowid() as id');
-    const row = await db.getAsync('SELECT * FROM courses WHERE id = ?', [created.id]);
-    res.status(201).json({ course: row });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: create textbook (admin only)
-app.post('/api/textbooks', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  if (!await tableExists('textbooks')) return res.status(400).json({ error: 'textbooks table not present' });
-  const b = req.body || {};
-  try {
-    await db.runAsync('INSERT INTO textbooks (id, title, description, price, quantity, course_id) VALUES (?, ?, ?, ?, ?, ?)', [b.id || null, b.title || '', b.description || '', b.price || 0, b.quantity || 0, b.course_id || null]);
-    const created = await db.getAsync('SELECT last_insert_rowid() as id');
-    const row = await db.getAsync('SELECT * FROM textbooks WHERE id = ?', [created.id]);
-    res.status(201).json({ textbook: row });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: create enrollment
-app.post('/api/courses_enrolled', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  if (!await tableExists('courses_enrolled')) return res.status(400).json({ error: 'courses_enrolled table not present' });
-  const b = req.body || {};
-  try {
-    await db.runAsync('INSERT INTO courses_enrolled (course_id, student_id, status) VALUES (?, ?, ?)', [b.course_id, b.student_id, b.status || 0]);
-    res.status(201).json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// POST: create final grade
-app.post('/api/final_grades', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  if (!await tableExists('final_grades')) return res.status(400).json({ error: 'final_grades table not present' });
-  const b = req.body || {};
-  try {
-    await db.runAsync('INSERT INTO final_grades (course_id, student_id, term, grade) VALUES (?, ?, ?, ?)', [b.course_id, b.student_id, b.term, b.grade || '']);
-    res.status(201).json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// Admin: list users
-app.get('/api/users', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
-  try {
-    const users = await db.allAsync('SELECT id, email, created_at, acct_type FROM users ORDER BY id');
+    const users = await db.allAsync('SELECT id, email, acct_type, created_at FROM users ORDER BY created_at DESC');
     res.json({ users });
   } catch (err) {
     console.error(err);
@@ -510,28 +240,136 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Admin: create invite code
-const crypto = require('crypto');
-app.post('/api/invites', async (req, res) => {
-  const token = req.cookies[TOKEN_NAME];
-  const data = token && verifyToken(token);
-  if (!data) return res.status(401).json({ error: 'Not authenticated' });
-  if (data.acct_type !== 1) return res.status(403).json({ error: 'Forbidden' });
-
+// Generate invite code (admin only)
+app.post('/api/invites', requireAuth, async (req, res) => {
   try {
-    const code = crypto.randomBytes(8).toString('hex');
-    await db.runAsync('INSERT INTO invites (code, created_by) VALUES (?, ?)', [code, data.id]);
-    res.status(201).json({ code });
+    if (req.user.acct_type !== 1) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    const code = require('crypto').randomBytes(8).toString('hex').toUpperCase();
+    await db.runAsync('INSERT INTO invites (code, created_by, used) VALUES (?, ?, 0)', [code, req.user.id]);
+    res.json({ code });
   } catch (err) {
-    console.error('Invite creation failed', err);
-    res.status(500).json({ error: 'Database error' });
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate invite' });
   }
 });
 
-// Fallback: serve frontend
+
+// Get all courses
+app.get('/api/courses', requireAuth, async (req, res) => {
+  try {
+    const courses = await db.allAsync('SELECT * FROM courses ORDER BY start_date DESC');
+    res.json(courses);
+  } catch (err) {
+    console.error('Error fetching courses:', err);
+    res.status(500).json({ error: 'Failed to fetch courses' });
+  }
+});
+
+// Create new course - CALLBACK STYLE
+app.post('/api/courses', requireAuth, (req, res) => {
+  const { title, units, start_date, end_date, instructor_id, meeting_days, add_code } = req.body;
+  
+  console.log('Received course data:', req.body);
+  
+  if (!title || !units || !start_date) {
+    return res.status(400).json({ error: 'Missing required fields: title, units, start_date' });
+  }
+
+  db.run(
+    `INSERT INTO courses (title, units, start_date, end_date, instructor_id, meeting_days, add_code) 
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [title, Number(units), start_date, end_date || start_date, instructor_id || null, meeting_days || null, add_code || null],
+    function(err) {
+      if (err) {
+        console.error('Error creating course:', err);
+        return res.status(500).json({ error: 'Failed to create course: ' + err.message });
+      }
+      
+      const courseId = this.lastID;
+      console.log('Course created with ID:', courseId);
+      
+      db.get('SELECT * FROM courses WHERE id = ?', [courseId], (err, course) => {
+        if (err) {
+          console.error('Error fetching course:', err);
+          return res.status(500).json({ error: 'Course created but failed to retrieve' });
+        }
+        res.status(201).json({ success: true, course });
+      });
+    }
+  );
+});
+
+
+// Get students
+app.get('/api/students', requireAuth, async (req, res) => {
+  try {
+    const students = await db.allAsync('SELECT * FROM user_profiles ORDER BY id');
+    res.json({ students });
+  } catch (err) {
+    console.error('Error fetching students:', err);
+    res.status(500).json({ error: 'Failed to fetch students' });
+  }
+});
+
+// Add student - CALLBACK STYLE
+app.post('/api/students', requireAuth, (req, res) => {
+  const { first_name, last_name, email, phone, street_addr, city, state, country, acct_type } = req.body;
+  
+  if (!first_name || !last_name || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  db.run(
+    `INSERT INTO user_profiles (first_name, last_name, email, phone, street_addr, city, state, country, acct_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [first_name, last_name, email, phone || null, street_addr || '', city || '', state || '', country || '', acct_type || 0],
+    function(err) {
+      if (err) {
+        console.error('Error creating student:', err);
+        return res.status(500).json({ error: 'Failed to create student: ' + err.message });
+      }
+      
+      const studentId = this.lastID;
+      
+      db.get('SELECT * FROM user_profiles WHERE id = ?', [studentId], (err, student) => {
+        if (err) {
+          return res.status(500).json({ error: 'Student created but failed to retrieve' });
+        }
+        res.status(201).json({ success: true, student });
+      });
+    }
+  );
+});
+
+// Link student to user
+app.post('/api/students/link', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { profile_id, user_id } = req.body;
+    
+    if (!profile_id || !user_id) {
+      return res.status(400).json({ error: 'profile_id and user_id required' });
+    }
+
+    await db.runAsync('UPDATE user_profiles SET user_id = ? WHERE id = ?', [user_id, profile_id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error linking student:', err);
+    res.status(500).json({ error: 'Failed to link student' });
+  }
+});
+
+
+// Fallback: serve frontend (MUST BE LAST)
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

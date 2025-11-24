@@ -4,44 +4,28 @@
   <meta charset="UTF-8">
   <title>Students - Auth Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: '#6366f1',
-            'brand-strong': '#4f46e5',
-            'brand-medium': '#a5b4fc',
-          }
-        }
-      }
-    }
+    tailwind.config = { theme: { extend: { colors: { brand: '#6366f1', 'brand-strong': '#4f46e5', 'brand-medium': '#a5b4fc' } } } }
   </script>
-  
 </head>
 <body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen flex items-center justify-center p-6">
 
   <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-5xl w-full max-h-screen overflow-y-auto">
 
-    <!-- Header -->
     <div class="flex items-center justify-between mb-10">
-      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl flex items-center gap-2">
-        ← Back to Login
-      </a>
+      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl">Back to Login</a>
       <h1 class="text-5xl font-extrabold text-brand">Students Dashboard</h1>
       <div id="status" class="text-lg font-bold"></div>
     </div>
 
-    <!-- Refresh Button -->
     <div class="text-center mb-8">
       <button id="btn-refresh" class="bg-brand hover:bg-brand-strong text-white font-bold py-4 px-10 rounded-full text-xl transition transform hover:scale-105">
         Refresh All Data
       </button>
     </div>
 
-    <!-- Students Section -->
+    <!-- STUDENTS -->
     <section class="mb-12">
       <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
         Students
@@ -60,9 +44,9 @@
           <input name="city" placeholder="City" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
           <input name="state" placeholder="State" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
           <input name="country" placeholder="Country" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
-          <input name="acct_type" type="number" value="0" placeholder="Account Type (0=Student, 1=Admin)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="acct_type" type="number" value="0" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
           <div class="md:col-span-2 text-center">
-            <button type="submit" id="btn-add" class="bg-brand hover:bg-brand-strong text-white font-bold py-5 px-12 rounded-full text-xl transition transform hover:scale-105">
+            <button type="submit" class="bg-brand hover:bg-brand-strong text-white font-bold py-5 px-12 rounded-full text-xl transition transform hover:scale-105">
               Add Student
             </button>
           </div>
@@ -73,26 +57,17 @@
         <table id="students-table" class="w-full text-left">
           <thead class="bg-brand text-white">
             <tr>
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Name</th>
-              <th class="px-6 py-4">Email</th>
-              <th class="px-6 py-4">Phone</th>
-              <th class="px-6 py-4">City</th>
-              <th class="px-6 py-4">State</th>
-              <th class="px-6 py-4">Country</th>
-              <th class="px-6 py-4">Acct Type</th>
+              <th class="px-6 py-4">ID</th><th class="px-6 py-4">User ID</th><th class="px-6 py-4">Name</th><th class="px-6 py-4">Email</th>
+              <th class="px-6 py-4">Phone</th><th class="px-6 py-4">City</th><th class="px-6 py-4">State</th><th class="px-6 py-4">Country</th><th class="px-6 py-4">Acct Type</th>
             </tr>
           </thead>
           <tbody class="bg-white"></tbody>
         </table>
-        <p id="empty" class="text-center py-12 text-gray-600 text-xl">No students found.</p>
+        <p id="empty" class="text-center py-12 text-gray-600 text-xl hidden">No students found.</p>
       </div>
     </section>
 
-    <!-- Courses, Enrollments, Grades, Books — same style -->
-    <!-- (You can copy-paste and style similarly — or I can do it for you!) -->
-
-    <!-- Example: Courses Section (minimal) -->
+    <!-- COURSES -->
     <section class="mb-12">
       <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
         Courses
@@ -100,31 +75,261 @@
           Add Course
         </button>
       </h2>
-      <div id="courses-content" class="bg-gray-50 p-8 rounded-2xl border-2 border-brand-medium" style="display:none">
-        <!-- Add course form here -->
+
+      <div id="courses-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="course-title" placeholder="Title *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-units" type="number" placeholder="Units *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-start" type="date" placeholder="Start Date *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-instructor" type="number" placeholder="Instructor ID (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-meeting-days" placeholder="Meeting Days (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-add-code" placeholder="Add Code (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-course" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl transition transform hover:scale-105">
+              Add Course Now
+            </button>
+          </div>
+        </div>
       </div>
+
       <div class="overflow-x-auto rounded-xl border-2 border-brand">
         <table id="courses-table" class="w-full text-left">
-          <thead class="bg-brand text-white">
-            <tr>
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Title</th>
-              <th class="px-6 py-4">Units</th>
-              <th class="px-6 py-4">Start</th>
-              <th class="px-6 py-4">End</th>
-              <th class="px-6 py-4">Instructor</th>
-            </tr>
-          </thead>
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Units</th>
+            <th class="px-6 py-4">Start</th><th class="px-6 py-4">End</th><th class="px-6 py-4">Instructor</th>
+          </tr></thead>
           <tbody class="bg-white"></tbody>
         </table>
-        <p id="courses-empty" class="text-center py-12 text-gray-600 text-xl">No courses found.</p>
+        <p id="courses-empty" class="text-center py-12 text-gray-600 text-xl hidden">No courses found.</p>
       </div>
     </section>
 
-    <!-- Repeat same pattern for Enrollments, Grades, Books... -->
-
   </div>
 
-  <script src="/students.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const $ = s => document.querySelector(s);
+      const status = $('#status');
+      
+      // API helper with better error handling
+      const api = async (path, opts = {}) => {
+        try {
+          const res = await fetch(path, { 
+            credentials: 'include', 
+            headers: { 'Content-Type': 'application/json' }, 
+            ...opts 
+          });
+          
+          const contentType = res.headers.get('content-type') || '';
+          let data;
+          
+          if (contentType.includes('application/json')) {
+            data = await res.json();
+          } else {
+            data = await res.text();
+          }
+          
+          if (!res.ok) {
+            console.error('API Error:', res.status, data);
+            throw { error: data.error || data || `HTTP ${res.status}` };
+          }
+          
+          return data;
+        } catch (err) {
+          console.error('Fetch error:', err);
+          throw err;
+        }
+      };
+
+      const showStatus = (msg, error = false) => {
+        status.textContent = msg;
+        status.style.color = error ? 'crimson' : 'green';
+        setTimeout(() => status.textContent = '', 4000);
+      };
+
+      // Toggle forms
+      const setupToggle = (btnId, containerId) => {
+        const btn = $(btnId);
+        const container = $(containerId);
+        if (!btn || !container) return;
+        btn.addEventListener('click', () => {
+          const hidden = container.style.display === 'none';
+          container.style.display = hidden ? 'block' : 'none';
+          btn.textContent = hidden ? 'Hide Form' : (btnId.includes('courses') ? 'Add Course' : 'Add New Student');
+        });
+      };
+      setupToggle('#toggle-add-btn', '#add-container');
+      setupToggle('#toggle-courses-btn', '#courses-content');
+
+      // Add Student
+      $('#student-form')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const payload = Object.fromEntries(new FormData(e.target));
+        payload.acct_type = Number(payload.acct_type) || 0;
+        
+        console.log('Adding student:', payload);
+        
+        try {
+          const result = await api('/api/students', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Student added:', result);
+          showStatus('Student added successfully!');
+          e.target.reset();
+          $('#add-container').style.display = 'none';
+          loadStudents();
+        } catch (err) { 
+          console.error('Add student error:', err);
+          showStatus(err.error || 'Failed to add student', true); 
+        }
+      });
+
+      // Add Course - FIXED
+      $('#btn-add-course')?.addEventListener('click', async () => {
+        const title = $('#course-title').value.trim();
+        const units = $('#course-units').value;
+        const start_date = $('#course-start').value;
+        const instructor_id = $('#course-instructor').value;
+        const meeting_days = $('#course-meeting-days').value.trim();
+        const add_code = $('#course-add-code').value.trim();
+        
+        // Validation
+        if (!title || !units || !start_date) {
+          showStatus('Please fill required fields: Title, Units, Start Date', true);
+          return;
+        }
+        
+        const payload = {
+          title: title,
+          units: Number(units),
+          start_date: start_date,
+          end_date: start_date,
+          instructor_id: instructor_id ? Number(instructor_id) : null,
+          meeting_days: meeting_days || null,
+          add_code: add_code || null
+        };
+        
+        console.log('Adding course:', payload);
+        
+        try {
+          $('#btn-add-course').disabled = true;
+          const result = await api('/api/courses', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Course added:', result);
+          
+          showStatus('Course added successfully!');
+          
+          // Clear inputs
+          $('#course-title').value = '';
+          $('#course-units').value = '';
+          $('#course-start').value = '';
+          $('#course-instructor').value = '';
+          $('#course-meeting-days').value = '';
+          $('#course-add-code').value = '';
+          
+          $('#courses-content').style.display = 'none';
+          $('#toggle-courses-btn').textContent = 'Add Course';
+          
+          loadCourses();
+        } catch (err) { 
+          console.error('Add course error:', err);
+          showStatus(err.error || 'Failed to add course', true); 
+        } finally { 
+          $('#btn-add-course').disabled = false; 
+        }
+      });
+
+      // Load Students
+      const loadStudents = async () => {
+        try {
+          const data = await api('/api/students');
+          const tbody = $('#students-table tbody');
+          tbody.innerHTML = '';
+          
+          const students = data.students || [];
+          console.log('Loaded students:', students.length);
+          
+          if (!students.length) { 
+            $('#empty').classList.remove('hidden');
+            $('#students-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#empty').classList.add('hidden');
+          $('#students-table').style.display = 'table';
+          
+          students.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4">${s.id || ''}</td>
+              <td class="px-6 py-4">${s.user_id || ''}</td>
+              <td class="px-6 py-4">${(s.first_name || '') + ' ' + (s.last_name || '')}</td>
+              <td class="px-6 py-4">${s.email || ''}</td>
+              <td class="px-6 py-4">${s.phone || ''}</td>
+              <td class="px-6 py-4">${s.city || ''}</td>
+              <td class="px-6 py-4">${s.state || ''}</td>
+              <td class="px-6 py-4">${s.country || ''}</td>
+              <td class="px-6 py-4">${s.acct_type ?? ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) { 
+          console.error('Load students error:', err);
+          $('#empty').classList.remove('hidden');
+          $('#students-table').style.display = 'none';
+        }
+      };
+
+      // Load Courses - FIXED
+      const loadCourses = async () => {
+        try {
+          const data = await api('/api/courses');
+          const tbody = $('#courses-table tbody');
+          tbody.innerHTML = '';
+          
+          // Handle both array and object responses
+          const courses = Array.isArray(data) ? data : (data.courses || []);
+          console.log('Loaded courses:', courses.length);
+          
+          if (!courses.length) { 
+            $('#courses-empty').classList.remove('hidden');
+            $('#courses-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#courses-empty').classList.add('hidden');
+          $('#courses-table').style.display = 'table';
+          
+          courses.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4">${c.id || ''}</td>
+              <td class="px-6 py-4">${c.title || ''}</td>
+              <td class="px-6 py-4">${c.units || ''}</td>
+              <td class="px-6 py-4">${c.start_date || ''}</td>
+              <td class="px-6 py-4">${c.end_date || ''}</td>
+              <td class="px-6 py-4">${c.instructor_id || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) { 
+          console.error('Load courses error:', err);
+          $('#courses-empty').classList.remove('hidden');
+          $('#courses-table').style.display = 'none';
+        }
+      };
+
+      // Refresh button
+      $('#btn-refresh')?.addEventListener('click', () => { 
+        showStatus('Refreshing...');
+        loadStudents(); 
+        loadCourses(); 
+      });
+      
+      // Initial load
+      console.log('Page loaded, fetching data...');
+      loadStudents(); 
+      loadCourses();
+    });
+  </script>
 </body>
 </html>

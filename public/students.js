@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const form            = $('#student-form');
   const btnAdd          = $('#btn-add');
 
-  
   const coursesTbody    = $('#courses-table')?.querySelector('tbody');
   const coursesEmpty    = $('#courses-empty');
   const enrollTbody     = $('#enroll-table')?.querySelector('tbody');
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let isAdmin = false;
   let currentUserId = null;
 
-  
   function showStatus(msg, isError = false) {
     statusEl.textContent = msg;
     statusEl.style.color = isError ? 'crimson' : 'green';
@@ -113,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Link user ID (admin only)
+  // Link user ID
   tbody?.addEventListener('click', async (e) => {
     const btn = e.target.closest('.btn-link');
     if (!btn) return;
@@ -142,79 +140,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Add student
+  // === Add Student ===
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!form.checkValidity()) return;
+    if (!form.checkValidity()) {
+      showStatus('Please fill all required fields', true);
+      return;
+    }
 
     const payload = Object.fromEntries(new FormData(form));
     payload.acct_type = Number(payload.acct_type) || 0;
 
     try {
-      btnAdd.disabled = true;
       await api('/api/students', { method: 'POST', body: JSON.stringify(payload) });
-      showStatus('Student added!');
+      showStatus('Student added successfully!');
       form.reset();
+      const addContainer = document.getElementById('add-container');
+      if (addContainer) addContainer.style.display = 'none';
       fetchStudents();
     } catch (err) {
       showStatus(err.error || 'Failed to add student', true);
-    } finally {
-      btnAdd.disabled = false;
     }
   });
 
-  
-  async function fetchAndRender(url, tbodyEl, emptyEl, fields) {
-    try {
-      const data = await api(url);
-      const list = Array.isArray(data) ? data : Object.values(data)[0] || [];
-      renderTable(list, tbodyEl, emptyEl, fields);
-    } catch(err){
-           if (emptyEl) emptyEl.textContent = err.error || 'Failed to load';
-    }
-  }
-
-  function renderTable(list, tbodyEl, emptyEl, fieldMap) {
-    if (!tbodyEl) return;
-    tbodyEl.innerHTML = '';
-    if (!list.length) {
-      tbodyEl.closest('table').style.display = 'none';
-      emptyEl.style.display = 'block';
-      return;
-    }
-    emptyEl.style.display = 'none';
-    tbodyEl.closest('table').style.display = 'table';
-
-    list.forEach(item => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-gray-50';
-      tr.innerHTML = fieldMap.map(f => `<td class="px-6 py-4">${item[f] ?? ''}</td>`).join('');
-      tbodyEl.appendChild(tr);
-    });
-  }
-
-  // Load all extra tables
-  async function loadAll() {
-    await Promise.allSettled([
-      fetchAndRender('/api/courses', coursesTbody, coursesEmpty, ['id', 'title', 'units', 'start_date', 'end_date', 'instructor_id']),
-      fetchAndRender('/api/courses_enrolled', enrollTbody, enrollEmpty, ['course_id', 'student_id', 'status']),
-      fetchAndRender('/api/final_grades', gradesTbody, gradesEmpty, ['course_id', 'student_id', 'term', 'grade']),
-      fetchAndRender('/api/textbooks', booksTbody, booksEmpty, ['id', 'title', 'price', 'quantity', 'course_id'])
-    ]);
-  }
-
-  // === TOGGLE FORMS ===
+  // === Toggle Forms ===
   function setupToggle(btnId, containerId) {
     const btn = $(btnId);
     const container = $(containerId);
-    const form = container?.querySelector('.add-form');
-    if (!btn || !form) return;
+    if (!btn || !container) return;
 
-    btn.textContent = 'Show';
     btn.addEventListener('click', () => {
-      const hidden = form.style.display === 'none' || !form.style.display;
-      form.style.display = hidden ? 'block' : 'none';
-      btn.textContent = hidden ? 'Hide' : 'Show';
+      const isHidden = container.style.display === 'none' || !container.style.display;
+      container.style.display = isHidden ? 'block' : 'none';
+      btn.textContent = isHidden ? 'Hide' : 'Show';
     });
   }
 
@@ -224,49 +182,101 @@ document.addEventListener('DOMContentLoaded', () => {
   setupToggle('#toggle-grades-btn', '#grades-content');
   setupToggle('#toggle-books-btn', '#books-content');
 
-  // === ADD BUTTONS (Courses, Enrollments, etc.) ===
+  // === FIXED: addItem function with better validation and error logging ===
   function addItem(buttonId, url, fields) {
     const btn = $(buttonId);
-    if (!btn) return;
+    if (!btn) {
+      console.warn(`Button ${buttonId} not found — skipping`);
+      return;
+    }
+
     btn.addEventListener('click', async () => {
       const payload = {};
       let valid = true;
+      const missingFields = [];
+
       fields.forEach(f => {
         const el = $(f.id);
-        if (el?.value === '' && f.required) valid = false;
-        payload[f.key] = f.transform ? f.transform(el?.value) : el?.value;
+        if (!el) {
+          console.warn(`Input ${f.id} not found`);
+          return;
+        }
+        
+        // FIXED: Better validation for required fields
+        const value = el.value ? el.value.trim() : '';
+        
+        if (f.required && !value) {
+          valid = false;
+          missingFields.push(f.id);
+        }
+
+        // Apply transformation or use raw value
+        if (f.transform && value) {
+          payload[f.key] = f.transform(value);
+        } else {
+          payload[f.key] = value || null;
+        }
       });
-      if (!valid) return showStatus('Fill all fields', true);
+
+      if (!valid) {
+        console.error('Missing required fields:', missingFields);
+        showStatus(`Please fill all required fields: ${missingFields.join(', ')}`, true);
+        return;
+      }
+
+      console.log('Submitting payload to', url, ':', payload);
 
       try {
         btn.disabled = true;
-        await api(url, { method: 'POST', body: JSON.stringify(payload) });
-        showStatus('Added!');
+        const response = await api(url, { method: 'POST', body: JSON.stringify(payload) });
+        console.log('Success response:', response);
+        showStatus('Added successfully!');
+        
+        // Clear form
+        fields.forEach(f => {
+          const el = $(f.id);
+          if (el) el.value = '';
+        });
+        
+        // Hide form
+        const containerId = buttonId === '#btn-add-course' ? '#courses-content' :
+                          buttonId === '#btn-add-enroll' ? '#enroll-content' :
+                          buttonId === '#btn-add-grade' ? '#grades-content' :
+                          buttonId === '#btn-add-book' ? '#books-content' : null;
+        if (containerId) {
+          const container = $(containerId);
+          if (container) container.style.display = 'none';
+        }
+        
         loadAll();
       } catch (err) {
-        showStatus(err.error || 'Failed', true);
+        console.error('Add item error:', err);
+        showStatus(err.error || 'Failed to add', true);
       } finally {
         btn.disabled = false;
       }
     });
   }
 
+  // === Add Course (with required fields marked) ===
   addItem('#btn-add-course', '/api/courses', [
-    { id: '#course-title', key: 'title' },
-    { id: '#course-units', key: 'units', transform: Number },
-    { id: '#course-start', key: 'start_date', transform: Number },
-    { id: '#course-end', key: 'end_date', transform: Number },
-    { id: '#course-instructor', key: 'instructor_id', transform: Number },
-    { id: '#course-meeting-days', key: 'meeting_days' },
-    { id: '#course-add-code', key: 'add_code' }
+    { id: '#course-title',       key: 'title',       required: true },
+    { id: '#course-units',       key: 'units',       transform: Number, required: true },
+    { id: '#course-start',       key: 'start_date',  required: true },
+    { id: '#course-end',         key: 'end_date',    required: true },
+    { id: '#course-instructor',  key: 'instructor_id', transform: v => v ? Number(v) : null },
+    { id: '#course-meeting-days',key: 'meeting_days' },
+    { id: '#course-add-code',    key: 'add_code' }
   ]);
 
+  // Add Enrollment
   addItem('#btn-add-enroll', '/api/courses_enrolled', [
     { id: '#enroll-course-id', key: 'course_id', transform: Number, required: true },
     { id: '#enroll-student-id', key: 'student_id', transform: Number, required: true },
     { id: '#enroll-status', key: 'status', transform: Number }
   ]);
 
+  // Add Grade
   addItem('#btn-add-grade', '/api/final_grades', [
     { id: '#grade-course-id', key: 'course_id', transform: Number, required: true },
     { id: '#grade-student-id', key: 'student_id', transform: Number, required: true },
@@ -274,18 +284,69 @@ document.addEventListener('DOMContentLoaded', () => {
     { id: '#grade-grade', key: 'grade' }
   ]);
 
+  // Add Textbook
   addItem('#btn-add-book', '/api/textbooks', [
-    { id: '#book-title', key: 'title' },
+    { id: '#book-title', key: 'title', required: true },
     { id: '#book-price', key: 'price', transform: Number },
     { id: '#book-qty', key: 'quantity', transform: Number },
     { id: '#book-course-id', key: 'course_id', transform: v => v ? Number(v) : null }
   ]);
 
-  // === INITIAL LOAD ===
+  // === Table rendering ===
+  async function fetchAndRender(url, tbodyEl, emptyEl, fields) {
+    try {
+      const data = await api(url);
+      const list = Array.isArray(data) ? data : Object.values(data)[0] || [];
+      renderTable(list, tbodyEl, emptyEl, fields);
+    } catch(err){
+      console.error(`Failed to fetch ${url}:`, err);
+      if (tbodyEl) {
+        const table = tbodyEl.closest('table');
+        if (table) table.style.display = 'none';
+      }
+      if (emptyEl) {
+        emptyEl.textContent = err.error || 'Failed to load';
+        emptyEl.style.display = 'block';
+      }
+    }
+  }
+
+  function renderTable(list, tbodyEl, emptyEl, fieldMap) {
+    if (!tbodyEl) return;
+    tbodyEl.innerHTML = '';
+    
+    const table = tbodyEl.closest('table');
+    
+    if (!list.length) {
+      if (table) table.style.display = 'none';
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+    
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (table) table.style.display = 'table';
+
+    list.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50';
+      tr.innerHTML = fieldMap.map(f => `<td class="px-6 py-4">${item[f] ?? ''}</td>`).join('');
+      tbodyEl.appendChild(tr);
+    });
+  }
+
+  async function loadAll() {
+    await Promise.allSettled([
+      fetchAndRender('/api/courses', coursesTbody, coursesEmpty, ['id', 'title', 'units', 'start_date', 'end_date', 'instructor_id']),
+      fetchAndRender('/api/courses_enrolled', enrollTbody, enrollEmpty, ['course_id', 'student_id', 'status']),
+      fetchAndRender('/api/final_grades', gradesTbody, gradesEmpty, ['course_id', 'student_id', 'term', 'grade']),
+      fetchAndRender('/api/textbooks', booksTbody, booksEmpty, ['id', 'title', 'price', 'quantity', 'course_id'])
+    ]);
+  }
+
+  // Initial load
   fetchStudents();
   loadAll();
 
-  // Refresh button
   btnRefresh?.addEventListener('click', () => {
     showStatus('Refreshing...');
     fetchStudents();
