@@ -1,39 +1,67 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Users — admin</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, Arial; max-width:900px; margin:2rem auto; padding:1rem; }
-    table { width:100%; border-collapse:collapse; margin-top:1rem; }
-    th, td { border:1px solid #ddd; padding:.5rem; text-align:left; }
-    th { background:#f4f4f4; }
-    .controls { display:flex; gap:.5rem; align-items:center; }
-    input.invite { font-family: monospace; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Users — Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: '#6366f1',
+            'brand-strong': '#4f46e5',
+            'brand-medium': '#a5b4fc',
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-  <a href="/">← Back</a>
-  <h1>Users (admin)</h1>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen flex items-center justify-center p-6">
 
-  <div class="controls">
-    <button id="btn-refresh">Refresh</button>
-    <button id="btn-gen-invite">Generate Invite</button>
-    <span id="status"></span>
+  <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-4xl w-full">
+
+
+    <div class="flex items-center justify-between mb-10">
+      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl flex items-center gap-2 transition-colors">
+        Back to Dashboard
+      </a>
+      <h1 class="text-5xl font-extrabold text-brand">Users: Admin Panel</h1>
+      <div></div>
+    </div>
+
+    <div id="status" class="mb-4 text-lg font-semibold"></div>
+
+   
+    <table id="users-table" class="w-full text-left border-collapse border border-gray-300 mb-6">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="p-2 border">ID</th>
+          <th class="p-2 border">Email</th>
+          <th class="p-2 border">Role</th>
+          <th class="p-2 border">Created</th>
+          <th class="p-2 border">Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="text-gray-500 mb-4">No users found.</div>
+
+
+    <div class="flex gap-4 mb-4">
+      <button id="btn-refresh" class="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-strong">Refresh Users</button>
+      <button id="btn-gen-invite" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Generate Invite</button>
+    </div>
+
+    <pre id="invite-output" class="bg-gray-100 p-2 rounded-lg"></pre>
+    
+
   </div>
+  
 
-  <div id="invite-output" style="margin-top:.5rem"></div>
 
-  <table id="users-table" style="display:none">
-    <thead>
-      <tr><th>ID</th><th>Email</th><th>Role</th><th>Created</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <p id="empty">No users found.</p>
-
-  <script src="/users.js"></script>
+  <script src="users.js"></script>
 </body>
 </html>

@@ -1,166 +1,837 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Students</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, Arial; max-width: 900px; margin: 2rem auto; padding: 1rem; }
-    table { width:100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ddd; padding: .5rem; text-align: left; }
-    th { background: #f4f4f4; }
-    .controls { display:flex; gap:.5rem; align-items:center; margin-top:.5rem; }
-  </style>
+  <meta charset="UTF-8">
+  <title>Students - Auth Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: '#6366f1', 'brand-strong': '#4f46e5', 'brand-medium': '#a5b4fc' } } } }
+  </script>
 </head>
-<body>
-  <a href="/">← Back</a>
-  <h1>Students</h1>
+<body class="bg-gradient-to-br from-indigo-100 to-purple-100 min-h-screen flex items-center justify-center p-6">
 
-  <div class="controls">
-    <button id="btn-refresh">Refresh</button>
-    <span id="status"></span>
+  <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-5xl w-full max-h-screen overflow-y-auto">
+
+    <div class="flex items-center justify-between mb-10">
+      <a href="/" class="text-brand hover:text-brand-strong font-bold text-xl">Back to Login</a>
+      <h1 class="text-5xl font-extrabold text-brand">Students Dashboard</h1>
+      <div id="status" class="text-lg font-bold"></div>
+    </div>
+
+    <div class="text-center mb-8">
+      <button id="btn-refresh" class="bg-brand hover:bg-brand-strong text-white font-bold py-4 px-10 rounded-full text-xl transition transform hover:scale-105">
+        Refresh All Data
+      </button>
+    </div>
+
+    <!-- STUDENTS -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Students
+        <button id="toggle-add-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add New Student
+        </button>
+      </h2>
+
+      <div id="add-container" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <form id="student-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input name="first_name" placeholder="First Name" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="last_name" placeholder="Last Name" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="email" type="email" placeholder="Email" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="phone" placeholder="Phone" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="street_addr" placeholder="Street Address" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="city" placeholder="City" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="state" placeholder="State" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="country" placeholder="Country" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input name="acct_type" type="number" value="0" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <div class="md:col-span-2 text-center">
+            <button type="submit" class="bg-brand hover:bg-brand-strong text-white font-bold py-5 px-12 rounded-full text-xl transition transform hover:scale-105">
+              Add Student
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="students-table" class="w-full text-left">
+          <thead class="bg-brand text-white">
+            <tr>
+              <th class="px-6 py-4">ID</th><th class="px-6 py-4">User ID</th><th class="px-6 py-4">Name</th><th class="px-6 py-4">Email</th>
+                <th class="px-6 py-4">Phone</th><th class="px-6 py-4">City</th><th class="px-6 py-4">State</th><th class="px-6 py-4">Country</th><th class="px-6 py-4">Acct Type</th><th class="px-6 py-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="empty" class="text-center py-12 text-gray-600 text-xl hidden">No students found.</p>
+      </div>
+    </section>
+
+    <!-- COURSES -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Courses
+        <button id="toggle-courses-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Course
+        </button>
+      </h2>
+
+      <div id="courses-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="course-title" placeholder="Title *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-units" type="number" placeholder="Units *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-start" type="date" placeholder="Start Date *" required class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-instructor" type="number" placeholder="Instructor ID (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-meeting-days" placeholder="Meeting Days (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <input id="course-add-code" placeholder="Add Code (optional)" class="px-6 py-4 rounded-full border-2 border-brand focus:outline-none focus:ring-4 focus:ring-brand-medium text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-course" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl transition transform hover:scale-105">
+              Add Course Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="courses-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Units</th>
+            <th class="px-6 py-4">Start</th><th class="px-6 py-4">End</th><th class="px-6 py-4">Instructor</th>
+            <th class="px-6 py-4">Actions</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="courses-empty" class="text-center py-12 text-gray-600 text-xl hidden">No courses found.</p>
+      </div>
+    </section>
+
+    <!-- ENROLLMENTS -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Enrollments
+        <button id="toggle-enroll-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Enrollment
+        </button>
+      </h2>
+
+      <div id="enroll-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="enroll-course-id" placeholder="Course ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="enroll-student-id" placeholder="Student ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="enroll-status" placeholder="Status (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-enroll" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Enrollment Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="enroll-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Status</th>
+          <th class="px-6 py-4">Actions</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="enroll-empty" class="text-center py-12 text-gray-600 text-xl hidden">No enrollments found.</p>
+      </div>
+    </section>
+
+    <!-- FINAL GRADES -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Final Grades
+        <button id="toggle-grades-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Grade
+        </button>
+      </h2>
+
+      <div id="grades-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="grade-course-id" placeholder="Course ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-student-id" placeholder="Student ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-term" placeholder="Term (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-grade" placeholder="Grade (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-grade" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Grade Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="grades-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Term</th><th class="px-6 py-4">Grade</th>
+          <th class="px-6 py-4">Actions</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="grades-empty" class="text-center py-12 text-gray-600 text-xl hidden">No grades found.</p>
+      </div>
+    </section>
+
+    <!-- TEXTBOOKS -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Textbooks
+        <button id="toggle-books-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Textbook
+        </button>
+      </h2>
+
+      <div id="books-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="book-title" placeholder="Title *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-price" type="number" placeholder="Price (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-qty" type="number" placeholder="Quantity (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-course-id" placeholder="Course ID (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-book" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Book Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="books-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Price</th><th class="px-6 py-4">Quantity</th><th class="px-6 py-4">Course ID</th>
+            <th class="px-6 py-4">Actions</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="books-empty" class="text-center py-12 text-gray-600 text-xl hidden">No textbooks found.</p>
+      </div>
+    </section>
+
   </div>
 
-  <section style="margin-top:1rem">
-    <h2 style="display:flex;align-items:center;gap:.5rem">
-      Student
-      <button id="toggle-add-btn" type="button" style="margin-left:auto">Show</button>
-    </h2>
-    <div id="add-container">
-  <form id="student-form" class="add-form" style="display:none">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-        <input name="first_name" id="first_name" placeholder="First name" required />
-        <input name="last_name" id="last_name" placeholder="Last name" required />
-        <input name="email" id="email" type="email" placeholder="Email" required />
-        <input name="phone" id="phone" placeholder="Phone" />
-        <input name="street_addr" id="street_addr" placeholder="Street address" />
-        <input name="city" id="city" placeholder="City" />
-        <input name="state" id="state" placeholder="State" />
-        <input name="country" id="country" placeholder="Country" />
-        <input name="acct_type" id="acct_type" type="number" placeholder="Acct type (number)" value="0" />
-      </div>
-      <div style="margin-top:.5rem">
-        <button type="submit" id="btn-add">Add student</button>
-      </div>
-    </form>
-    </div>
-  </section>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const $ = s => document.querySelector(s);
+      const status = $('#status');
+      
+      // API helper with better error handling
+      const api = async (path, opts = {}) => {
+        try {
+          const res = await fetch(path, { 
+            credentials: 'include', 
+            headers: { 'Content-Type': 'application/json' }, 
+            ...opts 
+          });
+          
+          const contentType = res.headers.get('content-type') || '';
+          let data;
+          
+          if (contentType.includes('application/json')) {
+            data = await res.json();
+          } else {
+            data = await res.text();
+          }
+          
+          if (!res.ok) {
+            console.error('API Error:', res.status, data);
+            throw { error: data.error || data || `HTTP ${res.status}` };
+          }
+          
+          return data;
+        } catch (err) {
+          console.error('Fetch error:', err);
+          throw err;
+        }
+      };
 
-  <div id="list">
-    <table id="students-table" style="display:none">
-      <thead>
-        <tr>
-          <th>ID</th><th>User ID</th><th>Name</th><th>Email</th><th>Phone</th><th>City</th><th>State</th><th>Country</th><th>Acct Type</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+      const showStatus = (msg, error = false) => {
+        status.textContent = msg;
+        status.style.color = error ? 'crimson' : 'green';
+        setTimeout(() => status.textContent = '', 4000);
+      };
 
-    <p id="empty">No students found.</p>
-  </div>
+      // Toggle forms
+      const setupToggle = (btnId, containerId) => {
+        const btn = $(btnId);
+        const container = $(containerId);
+        if (!btn || !container) return;
 
-  <section id="courses-section" style="margin-top:2rem">
-    <h2 style="display:flex;align-items:center;gap:.5rem">Courses
-      <button id="toggle-courses-btn" type="button" style="margin-left:auto">Show</button>
-    </h2>
-    <div id="courses-content">
-      <div class="add-form" id="courses-form" style="display:none">
-        <h3>Add course</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-          <input id="course-title" placeholder="Title" />
-          <input id="course-units" placeholder="Units" type="number" />
-          <input id="course-start" placeholder="Start date (epoch)" />
-          <input id="course-end" placeholder="End date (epoch)" />
-          <input id="course-instructor" placeholder="Instructor ID" />
-          <input id="course-meeting-days" placeholder="Meeting days" />
-          <input id="course-add-code" placeholder="Add code" />
-        </div>
-        <div style="margin-top:.5rem"><button id="btn-add-course" type="button">Add Course</button></div>
-      </div>
-    <table id="courses-table" style="display:none">
-      <thead>
-        <tr><th>ID</th><th>Title</th><th>Units</th><th>Start</th><th>End</th><th>Instructor ID</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <p id="courses-empty">No courses found.</p>
-    </div>
-  </section>
+        // Preserve the original button label so we can restore it reliably
+        const origLabel = btn.textContent.trim();
+        btn.dataset.origLabel = origLabel;
 
-  <section id="enroll-section" style="margin-top:2rem">
-    <h2 style="display:flex;align-items:center;gap:.5rem">Enrollments
-      <button id="toggle-enroll-btn" type="button" style="margin-left:auto">Show</button>
-    </h2>
-    <div id="enroll-content">
-      <div class="add-form" id="enroll-form" style="display:none">
-        <h3>Add enrollment</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-          <input id="enroll-course-id" placeholder="Course ID" type="number" />
-          <input id="enroll-student-id" placeholder="Student ID" type="number" />
-          <input id="enroll-status" placeholder="Status" type="number" />
-        </div>
-        <div style="margin-top:.5rem"><button id="btn-add-enroll" type="button">Add Enrollment</button></div>
-      </div>
-    <table id="enroll-table" style="display:none">
-      <thead>
-        <tr><th>Course ID</th><th>Student ID</th><th>Status</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <p id="enroll-empty">No enrollments found.</p>
-    </div>
-  </section>
+        btn.addEventListener('click', () => {
+          const isHidden = !container.style.display || container.style.display === 'none';
+          if (isHidden) {
+            container.style.display = 'block';
+            btn.textContent = 'Hide Form';
+          } else {
+            container.style.display = 'none';
+            btn.textContent = btn.dataset.origLabel || origLabel || 'Add';
+          }
+        });
+      };
+      setupToggle('#toggle-add-btn', '#add-container');
+      setupToggle('#toggle-courses-btn', '#courses-content');
+      setupToggle('#toggle-enroll-btn', '#enroll-content');
+      setupToggle('#toggle-grades-btn', '#grades-content');
+      setupToggle('#toggle-books-btn', '#books-content');
 
-  <section id="grades-section" style="margin-top:2rem">
-    <h2 style="display:flex;align-items:center;gap:.5rem">Final Grades
-      <button id="toggle-grades-btn" type="button" style="margin-left:auto">Show</button>
-    </h2>
-    <div id="grades-content">
-      <div class="add-form" id="grades-form" style="display:none">
-        <h3>Add final grade</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-          <input id="grade-course-id" placeholder="Course ID" type="number" />
-          <input id="grade-student-id" placeholder="Student ID" type="number" />
-          <input id="grade-term" placeholder="Term" type="number" />
-          <input id="grade-grade" placeholder="Grade" />
-        </div>
-        <div style="margin-top:.5rem"><button id="btn-add-grade" type="button">Add Grade</button></div>
-      </div>
-    <table id="grades-table" style="display:none">
-      <thead>
-        <tr><th>Course ID</th><th>Student ID</th><th>Term</th><th>Grade</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <p id="grades-empty">No grades found.</p>
-    </div>
-  </section>
+      // Track current user id so we can prevent deleting a student profile linked to the current user
+      let currentUserId = null;
+      async function fetchCurrentUser() {
+        try {
+          const r = await fetch('/api/me', { credentials: 'include' });
+          if (!r.ok) return;
+          const d = await r.json();
+          currentUserId = d.user?.id ?? null;
+        } catch (e) { /* ignore */ }
+      }
+      // Kick off fetching current user early
+      fetchCurrentUser();
 
-  <section id="books-section" style="margin-top:2rem">
-    <h2 style="display:flex;align-items:center;gap:.5rem">Textbooks
-      <button id="toggle-books-btn" type="button" style="margin-left:auto">Show</button>
-    </h2>
-    <div id="books-content">
-      <div class="add-form" id="books-form" style="display:none">
-        <h3>Add textbook</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-          <input id="book-title" placeholder="Title" />
-          <input id="book-price" placeholder="Price" type="number" step="0.01" />
-          <input id="book-qty" placeholder="Quantity" type="number" />
-          <input id="book-course-id" placeholder="Course ID" type="number" />
-        </div>
-        <div style="margin-top:.5rem"><button id="btn-add-book" type="button">Add Book</button></div>
-      </div>
-    <table id="books-table" style="display:none">
-      <thead>
-        <tr><th>ID</th><th>Title</th><th>Price</th><th>Qty</th><th>Course ID</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <p id="books-empty">No textbooks found.</p>
-    </div>
-  </section>
+      // Add Student
+      $('#student-form')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const payload = Object.fromEntries(new FormData(e.target));
+        payload.acct_type = Number(payload.acct_type) || 0;
+        
+        console.log('Adding student:', payload);
+        
+        try {
+          const result = await api('/api/students', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Student added:', result);
+          showStatus('Student added successfully!');
+          e.target.reset();
+          $('#add-container').style.display = 'none';
+          loadStudents();
+        } catch (err) { 
+          console.error('Add student error:', err);
+          showStatus(err.error || 'Failed to add student', true); 
+        }
+      });
 
-  <script src="/students.js"></script>
+      // Add Course - FIXED
+      $('#btn-add-course')?.addEventListener('click', async () => {
+        const title = $('#course-title').value.trim();
+        const units = $('#course-units').value;
+        const start_date = $('#course-start').value;
+        const instructor_id = $('#course-instructor').value;
+        const meeting_days = $('#course-meeting-days').value.trim();
+        const add_code = $('#course-add-code').value.trim();
+        
+        // Validation
+        if (!title || !units || !start_date) {
+          showStatus('Please fill required fields: Title, Units, Start Date', true);
+          return;
+        }
+        
+        const payload = {
+          title: title,
+          units: Number(units),
+          start_date: start_date,
+          end_date: start_date,
+          instructor_id: instructor_id ? Number(instructor_id) : null,
+          meeting_days: meeting_days || null,
+          add_code: add_code || null
+        };
+        
+        console.log('Adding course:', payload);
+        
+        try {
+          $('#btn-add-course').disabled = true;
+          const result = await api('/api/courses', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Course added:', result);
+          
+          showStatus('Course added successfully!');
+          
+          // Clear inputs
+          $('#course-title').value = '';
+          $('#course-units').value = '';
+          $('#course-start').value = '';
+          $('#course-instructor').value = '';
+          $('#course-meeting-days').value = '';
+          $('#course-add-code').value = '';
+          
+          $('#courses-content').style.display = 'none';
+          $('#toggle-courses-btn').textContent = 'Add Course';
+          
+          loadCourses();
+        } catch (err) { 
+          console.error('Add course error:', err);
+          showStatus(err.error || 'Failed to add course', true); 
+        } finally { 
+          $('#btn-add-course').disabled = false; 
+        }
+      });
+
+      // Add Enrollment
+      $('#btn-add-enroll')?.addEventListener('click', async () => {
+        const course_id = $('#enroll-course-id').value;
+        const student_id = $('#enroll-student-id').value;
+        const status = $('#enroll-status').value.trim();
+        
+        // Validation
+        if (!course_id || !student_id) {
+          showStatus('Please fill required fields: Course ID, Student ID', true);
+          return;
+        }
+        
+        const payload = {
+          course_id: Number(course_id),
+          student_id: Number(student_id),
+          status: status || null
+        };
+        
+        console.log('Adding enrollment:', payload);
+        
+        try {
+          $('#btn-add-enroll').disabled = true;
+          const result = await api('/api/enrollments', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Enrollment added:', result);
+          
+          showStatus('Enrollment added successfully!');
+          
+          // Clear inputs
+          $('#enroll-course-id').value = '';
+          $('#enroll-student-id').value = '';
+          $('#enroll-status').value = '';
+          
+          $('#enroll-content').style.display = 'none';
+          $('#toggle-enroll-btn').textContent = 'Add Enrollment';
+          
+          loadEnrollments();
+        } catch (err) { 
+          console.error('Add enrollment error:', err);
+          showStatus(err.error || 'Failed to add enrollment', true); 
+        } finally { 
+          $('#btn-add-enroll').disabled = false; 
+        }
+      });
+
+      // Add Grade
+      $('#btn-add-grade')?.addEventListener('click', async () => {
+        const course_id = $('#grade-course-id').value;
+        const student_id = $('#grade-student-id').value;
+        const term = $('#grade-term').value.trim();
+        const grade = $('#grade-grade').value.trim();
+        
+        // Validation
+        if (!course_id || !student_id) {
+          showStatus('Please fill required fields: Course ID, Student ID', true);
+          return;
+        }
+        
+        const payload = {
+          course_id: Number(course_id),
+          student_id: Number(student_id),
+          term: term || null,
+          grade: grade || null
+        };
+        
+        console.log('Adding grade:', payload);
+        
+        try {
+          $('#btn-add-grade').disabled = true;
+          const result = await api('/api/grades', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Grade added:', result);
+          
+          showStatus('Grade added successfully!');
+          
+          // Clear inputs
+          $('#grade-course-id').value = '';
+          $('#grade-student-id').value = '';
+          $('#grade-term').value = '';
+          $('#grade-grade').value = '';
+          
+          $('#grades-content').style.display = 'none';
+          $('#toggle-grades-btn').textContent = 'Add Grade';
+          
+          loadGrades();
+        } catch (err) { 
+          console.error('Add grade error:', err);
+          showStatus(err.error || 'Failed to add grade', true); 
+        } finally { 
+          $('#btn-add-grade').disabled = false; 
+        }
+      });
+
+      // Add Textbook
+      $('#btn-add-book')?.addEventListener('click', async () => {
+        const title = $('#book-title').value.trim();
+        const price = $('#book-price').value;
+        const qty = $('#book-qty').value;
+        const course_id = $('#book-course-id').value.trim();
+        
+        // Validation
+        if (!title) {
+          showStatus('Please fill required field: Title', true);
+          return;
+        }
+        
+        const payload = {
+          title: title,
+          price: price ? Number(price) : null,
+          qty: qty ? Number(qty) : null,
+          course_id: course_id ? Number(course_id) : null
+        };
+        
+        console.log('Adding textbook:', payload);
+        
+        try {
+          $('#btn-add-book').disabled = true;
+          const result = await api('/api/textbooks', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Textbook added:', result);
+          
+          showStatus('Textbook added successfully!');
+          
+          // Clear inputs
+          $('#book-title').value = '';
+          $('#book-price').value = '';
+          $('#book-qty').value = '';
+          $('#book-course-id').value = '';
+          
+          $('#books-content').style.display = 'none';
+          $('#toggle-books-btn').textContent = 'Add Textbook';
+          
+          loadTextbooks();
+        } catch (err) { 
+          console.error('Add textbook error:', err);
+          showStatus(err.error || 'Failed to add textbook', true); 
+        } finally { 
+          $('#btn-add-book').disabled = false; 
+        }
+      });
+
+      // Load Students
+      const loadStudents = async () => {
+        try {
+          const data = await api('/api/students');
+          const tbody = $('#students-table tbody');
+          tbody.innerHTML = '';
+          
+          const students = data.students || [];
+          console.log('Loaded students:', students.length);
+          
+          if (!students.length) { 
+            $('#empty').classList.remove('hidden');
+            $('#students-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#empty').classList.add('hidden');
+          $('#students-table').style.display = 'table';
+          
+          students.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+                // Add Delete button and disable it when this profile is linked to the current logged-in user
+                const linkedUser = s.user_id || null;
+                const disable = currentUserId && Number(currentUserId) === Number(linkedUser);
+                const btn = `<button class="btn-del-student bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded" data-id="${s.id || ''}" ${disable ? 'disabled title="Cannot delete profile linked to your account"' : ''}>Delete</button>`;
+
+                tr.innerHTML = `
+                  <td class="px-6 py-4">${s.id || ''}</td>
+                  <td class="px-6 py-4">${s.user_id || ''}</td>
+                  <td class="px-6 py-4">${(s.first_name || '') + ' ' + (s.last_name || '')}</td>
+                  <td class="px-6 py-4">${s.email || ''}</td>
+                  <td class="px-6 py-4">${s.phone || ''}</td>
+                  <td class="px-6 py-4">${s.city || ''}</td>
+                  <td class="px-6 py-4">${s.state || ''}</td>
+                  <td class="px-6 py-4">${s.country || ''}</td>
+                  <td class="px-6 py-4">${s.acct_type ?? ''}</td>
+                  <td class="px-6 py-4">${btn}</td>
+                `;
+            tbody.appendChild(tr);
+          });
+
+              // Attach delete handlers for student rows
+              document.querySelectorAll('.btn-del-student').forEach(b => {
+                b.addEventListener('click', async (ev) => {
+                  const id = b.dataset.id;
+                  if (!id) return;
+                  const ok = confirm('Delete student profile #' + id + '? This cannot be undone.');
+                  if (!ok) return;
+                  try {
+                    b.disabled = true;
+                    const res = await fetch(`/api/students/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+                    if (!res.ok) {
+                      const err = await res.json().catch(()=>({}));
+                      throw err;
+                    }
+                    showStatus('Student deleted');
+                    loadStudents();
+                  } catch (err) {
+                    showStatus(err.error || 'Failed to delete student', true);
+                    b.disabled = false;
+                  }
+                });
+              });
+        } catch (err) { 
+          console.error('Load students error:', err);
+          $('#empty').classList.remove('hidden');
+          $('#students-table').style.display = 'none';
+        }
+      };
+
+      // Load Courses - FIXED
+      const loadCourses = async () => {
+        try {
+          const data = await api('/api/courses');
+          const tbody = $('#courses-table tbody');
+          tbody.innerHTML = '';
+          
+          // Handle both array and object responses
+          const courses = Array.isArray(data) ? data : (data.courses || []);
+          console.log('Loaded courses:', courses.length);
+          
+          if (!courses.length) { 
+            $('#courses-empty').classList.remove('hidden');
+            $('#courses-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#courses-empty').classList.add('hidden');
+          $('#courses-table').style.display = 'table';
+          
+          courses.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-course bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-id="${c.id}">Delete</button>`;
+            tr.innerHTML = `
+              <td class="px-6 py-4">${c.id || ''}</td>
+              <td class="px-6 py-4">${c.title || ''}</td>
+              <td class="px-6 py-4">${c.units || ''}</td>
+              <td class="px-6 py-4">${c.start_date || ''}</td>
+              <td class="px-6 py-4">${c.end_date || ''}</td>
+              <td class="px-6 py-4">${c.instructor_id || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // Attach course delete handlers
+          document.querySelectorAll('.btn-del-course').forEach(b => {
+            b.addEventListener('click', async () => {
+              const id = b.dataset.id;
+              if (!id) return;
+              const ok = confirm('Delete course #' + id + '? This will remove the course.');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api(`/api/courses/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                showStatus('Course deleted');
+                loadCourses();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete course', true);
+                b.disabled = false;
+              }
+            });
+          });
+        } catch (err) { 
+          console.error('Load courses error:', err);
+          $('#courses-empty').classList.remove('hidden');
+          $('#courses-table').style.display = 'none';
+        }
+      };
+
+      // Load Enrollments
+      const loadEnrollments = async () => {
+        try {
+          const data = await api('/api/enrollments');
+          const tbody = $('#enroll-table tbody');
+          tbody.innerHTML = '';
+          
+          const enrollments = data.enrollments || [];
+          console.log('Loaded enrollments:', enrollments.length);
+          
+          if (!enrollments.length) { 
+            $('#enroll-empty').classList.remove('hidden');
+            $('#enroll-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#enroll-empty').classList.add('hidden');
+          $('#enroll-table').style.display = 'table';
+          
+          enrollments.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-enroll bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-course="${e.course_id}" data-student="${e.student_id}">Delete</button>`;
+            tr.innerHTML = `
+              <td class="px-6 py-4">${e.course_id || ''}</td>
+              <td class="px-6 py-4">${e.student_id || ''}</td>
+              <td class="px-6 py-4">${e.status || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // Attach enrollment delete handlers
+          document.querySelectorAll('.btn-del-enroll').forEach(b => {
+            b.addEventListener('click', async () => {
+              const course_id = b.dataset.course;
+              const student_id = b.dataset.student;
+              if (!course_id || !student_id) return;
+              const ok = confirm('Delete enrollment Course #' + course_id + ' Student #' + student_id + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api('/api/enrollments', { method: 'DELETE', body: JSON.stringify({ course_id: Number(course_id), student_id: Number(student_id) }) });
+                showStatus('Enrollment deleted');
+                loadEnrollments();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete enrollment', true);
+                b.disabled = false;
+              }
+            });
+          });
+        } catch (err) { 
+          console.error('Load enrollments error:', err);
+          $('#enroll-empty').classList.remove('hidden');
+          $('#enroll-table').style.display = 'none';
+        }
+      };
+
+      // Load Grades
+      const loadGrades = async () => {
+        try {
+          const data = await api('/api/grades');
+          const tbody = $('#grades-table tbody');
+          tbody.innerHTML = '';
+          
+          const grades = data.grades || [];
+          console.log('Loaded grades:', grades.length);
+          
+          if (!grades.length) { 
+            $('#grades-empty').classList.remove('hidden');
+            $('#grades-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#grades-empty').classList.add('hidden');
+          $('#grades-table').style.display = 'table';
+          
+          grades.forEach(g => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-grade bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-course="${g.course_id}" data-student="${g.student_id}" data-term="${g.term}">Delete</button>`;
+            tr.innerHTML = `
+              <td class="px-6 py-4">${g.course_id || ''}</td>
+              <td class="px-6 py-4">${g.student_id || ''}</td>
+              <td class="px-6 py-4">${g.term || ''}</td>
+              <td class="px-6 py-4">${g.grade || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // Attach grade delete handlers
+          document.querySelectorAll('.btn-del-grade').forEach(b => {
+            b.addEventListener('click', async () => {
+              const course_id = b.dataset.course;
+              const student_id = b.dataset.student;
+              const term = b.dataset.term || null;
+              if (!course_id || !student_id) return;
+              const ok = confirm('Delete grade for Course #' + course_id + ' Student #' + student_id + (term ? ' Term ' + term : '') + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api('/api/grades', { method: 'DELETE', body: JSON.stringify({ course_id: Number(course_id), student_id: Number(student_id), term: term ? Number(term) : null }) });
+                showStatus('Grade deleted');
+                loadGrades();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete grade', true);
+                b.disabled = false;
+              }
+            });
+          });
+        } catch (err) { 
+          console.error('Load grades error:', err);
+          $('#grades-empty').classList.remove('hidden');
+          $('#grades-table').style.display = 'none';
+        }
+      };
+
+      // Load Textbooks
+      const loadTextbooks = async () => {
+        try {
+          const data = await api('/api/textbooks');
+          const tbody = $('#books-table tbody');
+          tbody.innerHTML = '';
+          
+          const textbooks = data.textbooks || [];
+          console.log('Loaded textbooks:', textbooks.length);
+          
+          if (!textbooks.length) { 
+            $('#books-empty').classList.remove('hidden');
+            $('#books-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#books-empty').classList.add('hidden');
+          $('#books-table').style.display = 'table';
+          
+          textbooks.forEach(b => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-book bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-id="${b.id}">Delete</button>`;
+            tr.innerHTML = `
+              <td class="px-6 py-4">${b.id || ''}</td>
+              <td class="px-6 py-4">${b.title || ''}</td>
+              <td class="px-6 py-4">${b.price != null ? '$' + parseFloat(b.price).toFixed(2) : ''}</td>
+              <td class="px-6 py-4">${b.qty || ''}</td>
+              <td class="px-6 py-4">${b.course_id || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // Attach textbook delete handlers
+          document.querySelectorAll('.btn-del-book').forEach(b => {
+            b.addEventListener('click', async () => {
+              const id = b.dataset.id;
+              if (!id) return;
+              const ok = confirm('Delete textbook #' + id + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api(`/api/textbooks/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                showStatus('Textbook deleted');
+                loadTextbooks();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete textbook', true);
+                b.disabled = false;
+              }
+            });
+          });
+        } catch (err) { 
+          console.error('Load textbooks error:', err);
+          $('#books-empty').classList.remove('hidden');
+          $('#books-table').style.display = 'none';
+        }
+      };
+
+      // Refresh button
+      $('#btn-refresh')?.addEventListener('click', () => { 
+        showStatus('Refreshing...');
+        loadStudents(); 
+        loadCourses(); 
+        loadEnrollments();
+        loadGrades();
+        loadTextbooks();
+      });
+      
+      // Initial load
+      console.log('Page loaded, fetching data...');
+      loadStudents(); 
+      loadCourses();
+      loadEnrollments();
+      loadGrades();
+      loadTextbooks();
+    });
+  </script>
 </body>
 </html>
