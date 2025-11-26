@@ -58,7 +58,7 @@
           <thead class="bg-brand text-white">
             <tr>
               <th class="px-6 py-4">ID</th><th class="px-6 py-4">User ID</th><th class="px-6 py-4">Name</th><th class="px-6 py-4">Email</th>
-              <th class="px-6 py-4">Phone</th><th class="px-6 py-4">City</th><th class="px-6 py-4">State</th><th class="px-6 py-4">Country</th><th class="px-6 py-4">Acct Type</th>
+                <th class="px-6 py-4">Phone</th><th class="px-6 py-4">City</th><th class="px-6 py-4">State</th><th class="px-6 py-4">Country</th><th class="px-6 py-4">Acct Type</th><th class="px-6 py-4">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white"></tbody>
@@ -101,6 +101,107 @@
           <tbody class="bg-white"></tbody>
         </table>
         <p id="courses-empty" class="text-center py-12 text-gray-600 text-xl hidden">No courses found.</p>
+      </div>
+    </section>
+
+    <!-- ENROLLMENTS -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Enrollments
+        <button id="toggle-enroll-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Enrollment
+        </button>
+      </h2>
+
+      <div id="enroll-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="enroll-course-id" placeholder="Course ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="enroll-student-id" placeholder="Student ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="enroll-status" placeholder="Status (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-enroll" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Enrollment Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="enroll-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Status</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="enroll-empty" class="text-center py-12 text-gray-600 text-xl hidden">No enrollments found.</p>
+      </div>
+    </section>
+
+    <!-- FINAL GRADES -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Final Grades
+        <button id="toggle-grades-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Grade
+        </button>
+      </h2>
+
+      <div id="grades-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="grade-course-id" placeholder="Course ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-student-id" placeholder="Student ID *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-term" placeholder="Term (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="grade-grade" placeholder="Grade (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-grade" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Grade Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="grades-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Term</th><th class="px-6 py-4">Grade</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="grades-empty" class="text-center py-12 text-gray-600 text-xl hidden">No grades found.</p>
+      </div>
+    </section>
+
+    <!-- TEXTBOOKS -->
+    <section class="mb-12">
+      <h2 class="text-3xl font-bold text-brand mb-6 flex items-center justify-between">
+        Textbooks
+        <button id="toggle-books-btn" class="bg-brand hover:bg-brand-strong text-white px-6 py-3 rounded-full font-bold text-lg">
+          Add Textbook
+        </button>
+      </h2>
+
+      <div id="books-content" class="bg-gray-50 p-8 rounded-2xl mb-8 border-2 border-brand-medium" style="display:none">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input id="book-title" placeholder="Title *" required class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-price" type="number" placeholder="Price (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-qty" type="number" placeholder="Quantity (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <input id="book-course-id" placeholder="Course ID (optional)" class="px-6 py-4 rounded-full border-2 border-brand text-lg">
+          <div class="md:col-span-2 text-center">
+            <button id="btn-add-book" type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-12 rounded-full text-xl">
+              Add Book Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border-2 border-brand">
+        <table id="books-table" class="w-full text-left">
+          <thead class="bg-brand text-white"><tr>
+            <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Price</th><th class="px-6 py-4">Quantity</th><th class="px-6 py-4">Course ID</th>
+          </tr></thead>
+          <tbody class="bg-white"></tbody>
+        </table>
+        <p id="books-empty" class="text-center py-12 text-gray-600 text-xl hidden">No textbooks found.</p>
       </div>
     </section>
 
@@ -152,14 +253,40 @@
         const btn = $(btnId);
         const container = $(containerId);
         if (!btn || !container) return;
+
+        // Preserve the original button label so we can restore it reliably
+        const origLabel = btn.textContent.trim();
+        btn.dataset.origLabel = origLabel;
+
         btn.addEventListener('click', () => {
-          const hidden = container.style.display === 'none';
-          container.style.display = hidden ? 'block' : 'none';
-          btn.textContent = hidden ? 'Hide Form' : (btnId.includes('courses') ? 'Add Course' : 'Add New Student');
+          const isHidden = !container.style.display || container.style.display === 'none';
+          if (isHidden) {
+            container.style.display = 'block';
+            btn.textContent = 'Hide Form';
+          } else {
+            container.style.display = 'none';
+            btn.textContent = btn.dataset.origLabel || origLabel || 'Add';
+          }
         });
       };
       setupToggle('#toggle-add-btn', '#add-container');
       setupToggle('#toggle-courses-btn', '#courses-content');
+      setupToggle('#toggle-enroll-btn', '#enroll-content');
+      setupToggle('#toggle-grades-btn', '#grades-content');
+      setupToggle('#toggle-books-btn', '#books-content');
+
+      // Track current user id so we can prevent deleting a student profile linked to the current user
+      let currentUserId = null;
+      async function fetchCurrentUser() {
+        try {
+          const r = await fetch('/api/me', { credentials: 'include' });
+          if (!r.ok) return;
+          const d = await r.json();
+          currentUserId = d.user?.id ?? null;
+        } catch (e) { /* ignore */ }
+      }
+      // Kick off fetching current user early
+      fetchCurrentUser();
 
       // Add Student
       $('#student-form')?.addEventListener('submit', async e => {
@@ -236,6 +363,144 @@
         }
       });
 
+      // Add Enrollment
+      $('#btn-add-enroll')?.addEventListener('click', async () => {
+        const course_id = $('#enroll-course-id').value;
+        const student_id = $('#enroll-student-id').value;
+        const status = $('#enroll-status').value.trim();
+        
+        // Validation
+        if (!course_id || !student_id) {
+          showStatus('Please fill required fields: Course ID, Student ID', true);
+          return;
+        }
+        
+        const payload = {
+          course_id: Number(course_id),
+          student_id: Number(student_id),
+          status: status || null
+        };
+        
+        console.log('Adding enrollment:', payload);
+        
+        try {
+          $('#btn-add-enroll').disabled = true;
+          const result = await api('/api/enrollments', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Enrollment added:', result);
+          
+          showStatus('Enrollment added successfully!');
+          
+          // Clear inputs
+          $('#enroll-course-id').value = '';
+          $('#enroll-student-id').value = '';
+          $('#enroll-status').value = '';
+          
+          $('#enroll-content').style.display = 'none';
+          $('#toggle-enroll-btn').textContent = 'Add Enrollment';
+          
+          loadEnrollments();
+        } catch (err) { 
+          console.error('Add enrollment error:', err);
+          showStatus(err.error || 'Failed to add enrollment', true); 
+        } finally { 
+          $('#btn-add-enroll').disabled = false; 
+        }
+      });
+
+      // Add Grade
+      $('#btn-add-grade')?.addEventListener('click', async () => {
+        const course_id = $('#grade-course-id').value;
+        const student_id = $('#grade-student-id').value;
+        const term = $('#grade-term').value.trim();
+        const grade = $('#grade-grade').value.trim();
+        
+        // Validation
+        if (!course_id || !student_id) {
+          showStatus('Please fill required fields: Course ID, Student ID', true);
+          return;
+        }
+        
+        const payload = {
+          course_id: Number(course_id),
+          student_id: Number(student_id),
+          term: term || null,
+          grade: grade || null
+        };
+        
+        console.log('Adding grade:', payload);
+        
+        try {
+          $('#btn-add-grade').disabled = true;
+          const result = await api('/api/grades', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Grade added:', result);
+          
+          showStatus('Grade added successfully!');
+          
+          // Clear inputs
+          $('#grade-course-id').value = '';
+          $('#grade-student-id').value = '';
+          $('#grade-term').value = '';
+          $('#grade-grade').value = '';
+          
+          $('#grades-content').style.display = 'none';
+          $('#toggle-grades-btn').textContent = 'Add Grade';
+          
+          loadGrades();
+        } catch (err) { 
+          console.error('Add grade error:', err);
+          showStatus(err.error || 'Failed to add grade', true); 
+        } finally { 
+          $('#btn-add-grade').disabled = false; 
+        }
+      });
+
+      // Add Textbook
+      $('#btn-add-book')?.addEventListener('click', async () => {
+        const title = $('#book-title').value.trim();
+        const price = $('#book-price').value;
+        const qty = $('#book-qty').value;
+        const course_id = $('#book-course-id').value.trim();
+        
+        // Validation
+        if (!title) {
+          showStatus('Please fill required field: Title', true);
+          return;
+        }
+        
+        const payload = {
+          title: title,
+          price: price ? Number(price) : null,
+          qty: qty ? Number(qty) : null,
+          course_id: course_id ? Number(course_id) : null
+        };
+        
+        console.log('Adding textbook:', payload);
+        
+        try {
+          $('#btn-add-book').disabled = true;
+          const result = await api('/api/textbooks', { method: 'POST', body: JSON.stringify(payload) });
+          console.log('Textbook added:', result);
+          
+          showStatus('Textbook added successfully!');
+          
+          // Clear inputs
+          $('#book-title').value = '';
+          $('#book-price').value = '';
+          $('#book-qty').value = '';
+          $('#book-course-id').value = '';
+          
+          $('#books-content').style.display = 'none';
+          $('#toggle-books-btn').textContent = 'Add Textbook';
+          
+          loadTextbooks();
+        } catch (err) { 
+          console.error('Add textbook error:', err);
+          showStatus(err.error || 'Failed to add textbook', true); 
+        } finally { 
+          $('#btn-add-book').disabled = false; 
+        }
+      });
+
       // Load Students
       const loadStudents = async () => {
         try {
@@ -258,19 +523,48 @@
           students.forEach(s => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition';
-            tr.innerHTML = `
-              <td class="px-6 py-4">${s.id || ''}</td>
-              <td class="px-6 py-4">${s.user_id || ''}</td>
-              <td class="px-6 py-4">${(s.first_name || '') + ' ' + (s.last_name || '')}</td>
-              <td class="px-6 py-4">${s.email || ''}</td>
-              <td class="px-6 py-4">${s.phone || ''}</td>
-              <td class="px-6 py-4">${s.city || ''}</td>
-              <td class="px-6 py-4">${s.state || ''}</td>
-              <td class="px-6 py-4">${s.country || ''}</td>
-              <td class="px-6 py-4">${s.acct_type ?? ''}</td>
-            `;
+                // Add Delete button and disable it when this profile is linked to the current logged-in user
+                const linkedUser = s.user_id || null;
+                const disable = currentUserId && Number(currentUserId) === Number(linkedUser);
+                const btn = `<button class="btn-del-student bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded" data-id="${s.id || ''}" ${disable ? 'disabled title="Cannot delete profile linked to your account"' : ''}>Delete</button>`;
+
+                tr.innerHTML = `
+                  <td class="px-6 py-4">${s.id || ''}</td>
+                  <td class="px-6 py-4">${s.user_id || ''}</td>
+                  <td class="px-6 py-4">${(s.first_name || '') + ' ' + (s.last_name || '')}</td>
+                  <td class="px-6 py-4">${s.email || ''}</td>
+                  <td class="px-6 py-4">${s.phone || ''}</td>
+                  <td class="px-6 py-4">${s.city || ''}</td>
+                  <td class="px-6 py-4">${s.state || ''}</td>
+                  <td class="px-6 py-4">${s.country || ''}</td>
+                  <td class="px-6 py-4">${s.acct_type ?? ''}</td>
+                  <td class="px-6 py-4">${btn}</td>
+                `;
             tbody.appendChild(tr);
           });
+
+              // Attach delete handlers for student rows
+              document.querySelectorAll('.btn-del-student').forEach(b => {
+                b.addEventListener('click', async (ev) => {
+                  const id = b.dataset.id;
+                  if (!id) return;
+                  const ok = confirm('Delete student profile #' + id + '? This cannot be undone.');
+                  if (!ok) return;
+                  try {
+                    b.disabled = true;
+                    const res = await fetch(`/api/students/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+                    if (!res.ok) {
+                      const err = await res.json().catch(()=>({}));
+                      throw err;
+                    }
+                    showStatus('Student deleted');
+                    loadStudents();
+                  } catch (err) {
+                    showStatus(err.error || 'Failed to delete student', true);
+                    b.disabled = false;
+                  }
+                });
+              });
         } catch (err) { 
           console.error('Load students error:', err);
           $('#empty').classList.remove('hidden');
@@ -318,17 +612,134 @@
         }
       };
 
+      // Load Enrollments
+      const loadEnrollments = async () => {
+        try {
+          const data = await api('/api/enrollments');
+          const tbody = $('#enroll-table tbody');
+          tbody.innerHTML = '';
+          
+          const enrollments = data.enrollments || [];
+          console.log('Loaded enrollments:', enrollments.length);
+          
+          if (!enrollments.length) { 
+            $('#enroll-empty').classList.remove('hidden');
+            $('#enroll-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#enroll-empty').classList.add('hidden');
+          $('#enroll-table').style.display = 'table';
+          
+          enrollments.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4">${e.course_id || ''}</td>
+              <td class="px-6 py-4">${e.student_id || ''}</td>
+              <td class="px-6 py-4">${e.status || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) { 
+          console.error('Load enrollments error:', err);
+          $('#enroll-empty').classList.remove('hidden');
+          $('#enroll-table').style.display = 'none';
+        }
+      };
+
+      // Load Grades
+      const loadGrades = async () => {
+        try {
+          const data = await api('/api/grades');
+          const tbody = $('#grades-table tbody');
+          tbody.innerHTML = '';
+          
+          const grades = data.grades || [];
+          console.log('Loaded grades:', grades.length);
+          
+          if (!grades.length) { 
+            $('#grades-empty').classList.remove('hidden');
+            $('#grades-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#grades-empty').classList.add('hidden');
+          $('#grades-table').style.display = 'table';
+          
+          grades.forEach(g => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4">${g.course_id || ''}</td>
+              <td class="px-6 py-4">${g.student_id || ''}</td>
+              <td class="px-6 py-4">${g.term || ''}</td>
+              <td class="px-6 py-4">${g.grade || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) { 
+          console.error('Load grades error:', err);
+          $('#grades-empty').classList.remove('hidden');
+          $('#grades-table').style.display = 'none';
+        }
+      };
+
+      // Load Textbooks
+      const loadTextbooks = async () => {
+        try {
+          const data = await api('/api/textbooks');
+          const tbody = $('#books-table tbody');
+          tbody.innerHTML = '';
+          
+          const textbooks = data.textbooks || [];
+          console.log('Loaded textbooks:', textbooks.length);
+          
+          if (!textbooks.length) { 
+            $('#books-empty').classList.remove('hidden');
+            $('#books-table').style.display = 'none';
+            return; 
+          }
+          
+          $('#books-empty').classList.add('hidden');
+          $('#books-table').style.display = 'table';
+          
+          textbooks.forEach(b => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition';
+            tr.innerHTML = `
+              <td class="px-6 py-4">${b.id || ''}</td>
+              <td class="px-6 py-4">${b.title || ''}</td>
+              <td class="px-6 py-4">${b.price != null ? '$' + parseFloat(b.price).toFixed(2) : ''}</td>
+              <td class="px-6 py-4">${b.qty || ''}</td>
+              <td class="px-6 py-4">${b.course_id || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) { 
+          console.error('Load textbooks error:', err);
+          $('#books-empty').classList.remove('hidden');
+          $('#books-table').style.display = 'none';
+        }
+      };
+
       // Refresh button
       $('#btn-refresh')?.addEventListener('click', () => { 
         showStatus('Refreshing...');
         loadStudents(); 
         loadCourses(); 
+        loadEnrollments();
+        loadGrades();
+        loadTextbooks();
       });
       
       // Initial load
       console.log('Page loaded, fetching data...');
       loadStudents(); 
       loadCourses();
+      loadEnrollments();
+      loadGrades();
+      loadTextbooks();
     });
   </script>
 </body>

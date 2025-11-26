@@ -248,10 +248,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      if (!isValidEmail(email)) {
-        showStatus('Please enter a valid email address', true);
-        return;
-      }
+      // if (!isValidEmail(email)) {
+      //   showStatus('Please enter a valid email address', true);
+      //   return;
+      // }
 
       console.log('Login attempt:', { email, passwordLength: password.length });
 

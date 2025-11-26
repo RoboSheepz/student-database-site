@@ -313,6 +313,32 @@ app.get('/api/students', requireAuth, async (req, res) => {
   }
 });
 
+// Delete a student profile (admin only). Prevent deleting a profile linked to the current user's account.
+app.delete('/api/students/:id', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid student id' });
+
+    // Check profile
+    const profile = await db.getAsync('SELECT id, user_id FROM user_profiles WHERE id = ?', [id]);
+    if (!profile) return res.status(404).json({ error: 'Student profile not found' });
+
+    // Prevent deleting a profile linked to the current user's own account
+    if (profile.user_id && profile.user_id === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete a student profile linked to your account' });
+    }
+
+    await db.runAsync('DELETE FROM user_profiles WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting student:', err);
+    res.status(500).json({ error: 'Failed to delete student' });
+  }
+});
+
 // Add student - CALLBACK STYLE
 app.post('/api/students', requireAuth, (req, res) => {
   const { first_name, last_name, email, phone, street_addr, city, state, country, acct_type } = req.body;
@@ -372,4 +398,43 @@ app.get(/.*/, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// Delete a user (admin only). Admins cannot delete their own account via this endpoint.
+app.delete('/api/users/:id', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid user id' });
+
+    // Prevent self-delete
+    if (req.user.id === id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Clear any foreign-key references that don't have ON DELETE SET NULL
+    // so the DELETE won't fail due to constraint errors (for example invites.created_by/used_by).
+    try {
+      await db.runAsync('UPDATE invites SET used_by = NULL WHERE used_by = ?', [id]);
+      await db.runAsync('UPDATE invites SET created_by = NULL WHERE created_by = ?', [id]);
+    } catch (fkErr) {
+      console.error('Error clearing invite references before delete:', fkErr);
+      // Continue to attempt delete; if it still fails we'll return an error below.
+    }
+
+    // Delete the user. user_profiles.user_id has FK ON DELETE SET NULL, so profile will remain.
+    const result = await db.runAsync('DELETE FROM users WHERE id = ?', [id]);
+    // sqlite3's run does not provide rowcount via runAsync; perform a quick check
+    const remaining = await db.getAsync('SELECT id FROM users WHERE id = ?', [id]);
+    if (remaining) {
+      return res.status(500).json({ error: 'Failed to delete user' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
 });
