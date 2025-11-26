@@ -97,6 +97,7 @@
           <thead class="bg-brand text-white"><tr>
             <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Units</th>
             <th class="px-6 py-4">Start</th><th class="px-6 py-4">End</th><th class="px-6 py-4">Instructor</th>
+            <th class="px-6 py-4">Actions</th>
           </tr></thead>
           <tbody class="bg-white"></tbody>
         </table>
@@ -130,6 +131,7 @@
         <table id="enroll-table" class="w-full text-left">
           <thead class="bg-brand text-white"><tr>
             <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Status</th>
+          <th class="px-6 py-4">Actions</th>
           </tr></thead>
           <tbody class="bg-white"></tbody>
         </table>
@@ -164,6 +166,7 @@
         <table id="grades-table" class="w-full text-left">
           <thead class="bg-brand text-white"><tr>
             <th class="px-6 py-4">Course ID</th><th class="px-6 py-4">Student ID</th><th class="px-6 py-4">Term</th><th class="px-6 py-4">Grade</th>
+          <th class="px-6 py-4">Actions</th>
           </tr></thead>
           <tbody class="bg-white"></tbody>
         </table>
@@ -198,6 +201,7 @@
         <table id="books-table" class="w-full text-left">
           <thead class="bg-brand text-white"><tr>
             <th class="px-6 py-4">ID</th><th class="px-6 py-4">Title</th><th class="px-6 py-4">Price</th><th class="px-6 py-4">Quantity</th><th class="px-6 py-4">Course ID</th>
+            <th class="px-6 py-4">Actions</th>
           </tr></thead>
           <tbody class="bg-white"></tbody>
         </table>
@@ -595,6 +599,7 @@
           courses.forEach(c => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-course bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-id="${c.id}">Delete</button>`;
             tr.innerHTML = `
               <td class="px-6 py-4">${c.id || ''}</td>
               <td class="px-6 py-4">${c.title || ''}</td>
@@ -602,8 +607,28 @@
               <td class="px-6 py-4">${c.start_date || ''}</td>
               <td class="px-6 py-4">${c.end_date || ''}</td>
               <td class="px-6 py-4">${c.instructor_id || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
             `;
             tbody.appendChild(tr);
+          });
+
+          // Attach course delete handlers
+          document.querySelectorAll('.btn-del-course').forEach(b => {
+            b.addEventListener('click', async () => {
+              const id = b.dataset.id;
+              if (!id) return;
+              const ok = confirm('Delete course #' + id + '? This will remove the course.');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api(`/api/courses/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                showStatus('Course deleted');
+                loadCourses();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete course', true);
+                b.disabled = false;
+              }
+            });
           });
         } catch (err) { 
           console.error('Load courses error:', err);
@@ -634,12 +659,34 @@
           enrollments.forEach(e => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-enroll bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-course="${e.course_id}" data-student="${e.student_id}">Delete</button>`;
             tr.innerHTML = `
               <td class="px-6 py-4">${e.course_id || ''}</td>
               <td class="px-6 py-4">${e.student_id || ''}</td>
               <td class="px-6 py-4">${e.status || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
             `;
             tbody.appendChild(tr);
+          });
+
+          // Attach enrollment delete handlers
+          document.querySelectorAll('.btn-del-enroll').forEach(b => {
+            b.addEventListener('click', async () => {
+              const course_id = b.dataset.course;
+              const student_id = b.dataset.student;
+              if (!course_id || !student_id) return;
+              const ok = confirm('Delete enrollment Course #' + course_id + ' Student #' + student_id + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api('/api/enrollments', { method: 'DELETE', body: JSON.stringify({ course_id: Number(course_id), student_id: Number(student_id) }) });
+                showStatus('Enrollment deleted');
+                loadEnrollments();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete enrollment', true);
+                b.disabled = false;
+              }
+            });
           });
         } catch (err) { 
           console.error('Load enrollments error:', err);
@@ -670,13 +717,36 @@
           grades.forEach(g => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-grade bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-course="${g.course_id}" data-student="${g.student_id}" data-term="${g.term}">Delete</button>`;
             tr.innerHTML = `
               <td class="px-6 py-4">${g.course_id || ''}</td>
               <td class="px-6 py-4">${g.student_id || ''}</td>
               <td class="px-6 py-4">${g.term || ''}</td>
               <td class="px-6 py-4">${g.grade || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
             `;
             tbody.appendChild(tr);
+          });
+
+          // Attach grade delete handlers
+          document.querySelectorAll('.btn-del-grade').forEach(b => {
+            b.addEventListener('click', async () => {
+              const course_id = b.dataset.course;
+              const student_id = b.dataset.student;
+              const term = b.dataset.term || null;
+              if (!course_id || !student_id) return;
+              const ok = confirm('Delete grade for Course #' + course_id + ' Student #' + student_id + (term ? ' Term ' + term : '') + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api('/api/grades', { method: 'DELETE', body: JSON.stringify({ course_id: Number(course_id), student_id: Number(student_id), term: term ? Number(term) : null }) });
+                showStatus('Grade deleted');
+                loadGrades();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete grade', true);
+                b.disabled = false;
+              }
+            });
           });
         } catch (err) { 
           console.error('Load grades error:', err);
@@ -707,14 +777,35 @@
           textbooks.forEach(b => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 transition';
+            const btn = `<button class="btn-del-book bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded" data-id="${b.id}">Delete</button>`;
             tr.innerHTML = `
               <td class="px-6 py-4">${b.id || ''}</td>
               <td class="px-6 py-4">${b.title || ''}</td>
               <td class="px-6 py-4">${b.price != null ? '$' + parseFloat(b.price).toFixed(2) : ''}</td>
               <td class="px-6 py-4">${b.qty || ''}</td>
               <td class="px-6 py-4">${b.course_id || ''}</td>
+              <td class="px-6 py-4">${btn}</td>
             `;
             tbody.appendChild(tr);
+          });
+
+          // Attach textbook delete handlers
+          document.querySelectorAll('.btn-del-book').forEach(b => {
+            b.addEventListener('click', async () => {
+              const id = b.dataset.id;
+              if (!id) return;
+              const ok = confirm('Delete textbook #' + id + '?');
+              if (!ok) return;
+              try {
+                b.disabled = true;
+                await api(`/api/textbooks/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                showStatus('Textbook deleted');
+                loadTextbooks();
+              } catch (err) {
+                showStatus(err.error || 'Failed to delete textbook', true);
+                b.disabled = false;
+              }
+            });
           });
         } catch (err) { 
           console.error('Load textbooks error:', err);

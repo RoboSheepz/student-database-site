@@ -267,6 +267,21 @@ app.get('/api/courses', requireAuth, async (req, res) => {
   }
 });
 
+// Delete a course (admin only)
+app.delete('/api/courses/:id', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) return res.status(403).json({ error: 'Admin access required' });
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid course id' });
+
+    await db.runAsync('DELETE FROM courses WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting course:', err);
+    res.status(500).json({ error: 'Failed to delete course' });
+  }
+});
+
 // Create new course - CALLBACK STYLE
 app.post('/api/courses', requireAuth, (req, res) => {
   const { title, units, start_date, end_date, instructor_id, meeting_days, add_code } = req.body;
@@ -436,5 +451,54 @@ app.delete('/api/users/:id', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+// Delete an enrollment (admin only). Identified by course_id + student_id in request body.
+app.delete('/api/enrollments', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) return res.status(403).json({ error: 'Admin access required' });
+    const { course_id, student_id } = req.body || {};
+    if (!course_id || !student_id) return res.status(400).json({ error: 'course_id and student_id required' });
+
+    await db.runAsync('DELETE FROM courses_enrolled WHERE course_id = ? AND student_id = ?', [course_id, student_id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting enrollment:', err);
+    res.status(500).json({ error: 'Failed to delete enrollment' });
+  }
+});
+
+// Delete a grade (admin only). Identified by course_id + student_id + optional term in request body.
+app.delete('/api/grades', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) return res.status(403).json({ error: 'Admin access required' });
+    const { course_id, student_id, term } = req.body || {};
+    if (!course_id || !student_id) return res.status(400).json({ error: 'course_id and student_id required' });
+
+    if (term != null) {
+      await db.runAsync('DELETE FROM final_grades WHERE course_id = ? AND student_id = ? AND term = ?', [course_id, student_id, term]);
+    } else {
+      await db.runAsync('DELETE FROM final_grades WHERE course_id = ? AND student_id = ?', [course_id, student_id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting grade:', err);
+    res.status(500).json({ error: 'Failed to delete grade' });
+  }
+});
+
+// Delete a textbook (admin only)
+app.delete('/api/textbooks/:id', requireAuth, async (req, res) => {
+  try {
+    if (req.user.acct_type !== 1) return res.status(403).json({ error: 'Admin access required' });
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid textbook id' });
+
+    await db.runAsync('DELETE FROM textbooks WHERE id = ?', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting textbook:', err);
+    res.status(500).json({ error: 'Failed to delete textbook' });
   }
 });
